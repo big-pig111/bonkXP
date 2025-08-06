@@ -6,114 +6,157 @@
     <title>Multiplayer Meme Snake Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions-compat.js"></script>
     
-    <!-- Configure Tailwind custom colors and fonts -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        memeYellow: '#FFE100',
-                        memeBlue: '#0066FF',
-                        memeRed: '#FF3333',
-                        memeGreen: '#33CC33',
-                        memePink: '#FF66CC',
-                    },
-                    fontFamily: {
-                        meme: ['"Comic Sans MS"', '"Comic Neue"', 'cursive'],
-                    },
-                }
+    <!-- Background Music -->
+    <audio id="bgMusic" loop>
+        <source src="1.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Sound Effects -->
+    <audio id="eatSound" preload="auto">
+        <source src="2.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <style type="text/tailwindcss">
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        .font-meme {
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .text-memeRed { color: #FF3333; }
+        .text-memeBlue { color: #0066FF; }
+        .text-memeGreen { color: #33CC33; }
+        .text-memeYellow { color: #FFE100; }
+        .text-memePink { color: #FF66CC; }
+        
+        .bg-memeRed { background-color: #FF3333; }
+        .bg-memeBlue { background-color: #0066FF; }
+        .bg-memeGreen { background-color: #33CC33; }
+        .bg-memeYellow { background-color: #FFE100; }
+        .bg-memePink { background-color: #FF66CC; }
+        
+        .border-memeRed { border-color: #FF3333; }
+        .border-memeBlue { border-color: #0066FF; }
+        .border-memeGreen { border-color: #33CC33; }
+        .border-memeYellow { border-color: #FFE100; }
+        .border-memePink { border-color: #FF66CC; }
+        
+        .hover\:bg-memeRed:hover { background-color: #FF3333; }
+        .hover\:bg-memeBlue:hover { background-color: #0066FF; }
+        .hover\:bg-memeGreen:hover { background-color: #33CC33; }
+        .hover\:bg-memeYellow:hover { background-color: #FFE100; }
+        .hover\:bg-memePink:hover { background-color: #FF66CC; }
+        
+        .bounce-meme {
+            animation: bounce 1s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
             }
         }
-    </script>
-    
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .text-shadow {
-                text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+        
+        .pulse-meme {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
             }
-            .glow {
-                filter: drop-shadow(0 0 8px currentColor);
+            50% {
+                transform: scale(1.05);
             }
-            .rotate-random {
-                transform: rotate(var(--rotation, -5deg));
+            100% {
+                transform: scale(1);
             }
-            .bounce-meme {
-                animation: bounceMeme 0.5s ease-in-out infinite alternate;
-            }
-            @keyframes bounceMeme {
-                from { transform: translateY(0); }
-                to { transform: translateY(-10px); }
-            }
-            .wiggle {
-                animation: wiggle 1s ease-in-out infinite;
-            }
-            @keyframes wiggle {
-                0%, 100% { transform: rotate(-3deg); }
-                50% { transform: rotate(3deg); }
-            }
-            
-            .meme-pulse {
-                animation: memePulse 2s ease-in-out infinite;
-            }
-            @keyframes memePulse {
-                0%, 100% { transform: scale(1); filter: hue-rotate(0deg); }
-                50% { transform: scale(1.05); filter: hue-rotate(180deg); }
-            }
-            
-            .rainbow-text {
-                animation: rainbow 3s linear infinite;
-            }
-            @keyframes rainbow {
-                0% { color: #ff0000; }
-                16.66% { color: #ff8000; }
-                33.33% { color: #ffff00; }
-                50% { color: #00ff00; }
-                66.66% { color: #0080ff; }
-                83.33% { color: #8000ff; }
-                100% { color: #ff0000; }
-            }
-            
-            .corpse-glow {
-                animation: corpseGlow 1.5s ease-in-out infinite alternate;
-            }
-            @keyframes corpseGlow {
-                from { filter: drop-shadow(0 0 5px currentColor); }
-                to { filter: drop-shadow(0 0 20px currentColor); }
-            }
-            
-            /* Snake body connection effects */
-            .snake-segment {
-                border-radius: 4px;
-                transition: all 0.1s ease;
-            }
-            
-            .snake-corner {
-                border-radius: 8px;
-                position: relative;
-            }
-            
-            .snake-corner::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                border-radius: 8px;
-                background: inherit;
-                z-index: -1;
-                filter: blur(2px);
-            }
-
+        }
+        
+        /* Music Control Floating Window Styles */
+        .music-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #FFE100;
+            border-radius: 15px;
+            padding: 10px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .music-control:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 225, 0, 0.5);
+        }
+        
+        .music-btn {
+            background: linear-gradient(45deg, #FFE100, #FF9900);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            color: #000;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .music-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 225, 0, 0.7);
+        }
+        
+        .music-btn.muted {
+            background: linear-gradient(45deg, #666, #999);
+            color: #fff;
+        }
+        
+        .music-indicator {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 15px;
+            height: 15px;
+            background: #33CC33;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+        }
+        
+        .music-indicator.muted {
+            background: #FF3333;
+            animation: none;
         }
     </style>
 </head>
 <body class="bg-gray-900 font-meme min-h-screen flex flex-col items-center justify-center p-4 text-white overflow-x-hidden">
+    
+    <!-- Music Control Floating Window -->
+    <div class="music-control" id="musicControl">
+        <div class="music-indicator" id="musicIndicator"></div>
+        <button class="music-btn" id="musicBtn" title="Toggle Music">
+            <i class="fa fa-music"></i>
+        </button>
+    </div>
     <!-- Page Title -->
     <header class="text-center mb-6 relative">
         <h1 class="text-[clamp(2rem,5vw,4rem)] font-bold text-memeYellow glow mb-2 transform -rotate-2">
@@ -420,6 +463,17 @@
         const playerNameInput = document.getElementById('playerNameInput');
         const roomSelect = document.getElementById('roomSelect');
         
+        // Music Control Elements
+        const bgMusic = document.getElementById('bgMusic');
+        const musicBtn = document.getElementById('musicBtn');
+        const musicIndicator = document.getElementById('musicIndicator');
+        let isMusicPlaying = false;
+        let musicVolume = 0.5;
+        
+        // Sound Effects Elements
+        const eatSound = document.getElementById('eatSound');
+        let soundVolume = 0.7;
+        
                 // Game State Variables
         let playerId = null;
         let playerWallet = ''; // Player wallet address
@@ -450,10 +504,14 @@
         let snakeHeadImage = null;
         let snakeBodyImage = null;
         let snakeTailImage = null;
-        let foodImage = null;
-        let corpseImage = null;
-        let imagesLoaded = 0;
-        const totalImages = 5;
+                  let foodImage = null;
+          let corpseImage = null;
+          let snakeTurnEImage = null;  // 右下转弯
+          let snakeTurnQImage = null;  // 左下转弯
+          let snakeTurnRImage = null;  // 左上转弯
+          let snakeTurnWImage = null;  // 右上转弯
+          let imagesLoaded = 0;
+          const totalImages = 9;
         
         // Meme elements
         const memeFaces = ['(◍•ᴗ•◍)', '(¬‿¬)', '(ʘ‿ʘ)', '(◔_◔)', '(°ロ°)'];
@@ -481,6 +539,10 @@
             snakeTailImage = new Image();
             foodImage = new Image();
             corpseImage = new Image();
+            snakeTurnEImage = new Image();
+            snakeTurnQImage = new Image();
+            snakeTurnRImage = new Image();
+            snakeTurnWImage = new Image();
             
             snakeHeadImage.onload = function() {
                 imagesLoaded++;
@@ -517,11 +579,43 @@
                 }
             };
             
+            snakeTurnEImage.onload = function() {
+                imagesLoaded++;
+                if (imagesLoaded === totalImages) {
+                    console.log('All images loaded');
+                }
+            };
+            
+            snakeTurnQImage.onload = function() {
+                imagesLoaded++;
+                if (imagesLoaded === totalImages) {
+                    console.log('All images loaded');
+                }
+            };
+            
+            snakeTurnRImage.onload = function() {
+                imagesLoaded++;
+                if (imagesLoaded === totalImages) {
+                    console.log('All images loaded');
+                }
+            };
+            
+            snakeTurnWImage.onload = function() {
+                imagesLoaded++;
+                if (imagesLoaded === totalImages) {
+                    console.log('All images loaded');
+                }
+            };
+            
             snakeHeadImage.src = 'png/snake1.png';
             snakeBodyImage.src = 'png/snake.png';
             snakeTailImage.src = 'png/snake4.png';
             foodImage.src = 'png/snake2.png';
             corpseImage.src = 'png/snake3.png';
+            snakeTurnEImage.src = 'png/e.png';     // 右下转弯
+            snakeTurnQImage.src = 'png/q.png';     // 左下转弯
+            snakeTurnRImage.src = 'png/r.png';     // 左上转弯
+            snakeTurnWImage.src = 'png/w.png';     // 右上转弯
         }
         
         // Initialize canvas size and listen for window resize
@@ -1193,6 +1287,9 @@
                         const updatedFoods = foods.filter((_, index) => index !== i);
                         database.ref(`rooms/${gameRoom}/foods`).set(updatedFoods);
                         
+                        // 播放吃食物音效
+                        playEatSound();
+                        
                         // 生成新食物
                         generateFood();
                         
@@ -1216,6 +1313,9 @@
                     if (Math.abs(head.x - corpseFood.x) < gridSize/2 && Math.abs(head.y - corpseFood.y) < gridSize/2) {
                         console.log('吃到尸体食物!', {head, corpseFood}); // 调试信息
                         
+                        // 播放吃食物音效
+                        playEatSound();
+                        
                         // 尸体食物只加分数，不增加蛇长度
                         score += 5;
                         updateScore();
@@ -1233,6 +1333,9 @@
             // 特殊食物 - 使用更宽松的碰撞检测
             if (specialFood && Math.abs(head.x - specialFood.x) < gridSize/2 && Math.abs(head.y - specialFood.y) < gridSize/2) {
                 console.log('吃到特殊食物!', {head, specialFood}); // 调试信息
+                
+                // 播放吃食物音效
+                playEatSound();
                 
                 // 特殊食物给更多分数
                 score += 50;
@@ -1337,16 +1440,8 @@
             Object.values(otherPlayers).forEach(player => {
                 if (player.snake) {
                     player.snake.forEach((segment, index) => {
-                        // 蛇头特殊样式
+                        // 蛇头（简化显示）
                         if (index === 0) {
-                            // 蛇头背景
-                            ctx.fillStyle = player.color;
-                            ctx.shadowColor = player.color;
-                            ctx.shadowBlur = 10;
-                            ctx.beginPath();
-                            ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
-                            ctx.fill();
-                            ctx.shadowBlur = 0;
                             
                             // 绘制蛇头图片（正方形）
                             if (snakeHeadImage && snakeHeadImage.complete) {
@@ -1464,36 +1559,67 @@
                                     else if (last.y < secondLast.y) bodyDirection = 'up';
                                 }
                                 
-                                // 根据方向旋转图片
-                                let rotation = 0;
-                                switch (bodyDirection) {
-                                    case 'up': rotation = -Math.PI / 2; break;
-                                    case 'down': rotation = Math.PI / 2; break;
-                                    case 'left': rotation = Math.PI; break;
-                                    case 'right': rotation = 0; break;
-                                }
-                                
                                 if (isCorner) {
-                                    // 拐弯点特殊绘制
-                                    ctx.save();
-                                    ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
-                                    ctx.rotate(rotation);
+                                    // 转弯点：使用专用转弯图片
+                                    const prev = player.snake[index - 1];
+                                    const next = player.snake[index + 1];
+                                    const current = segment;
                                     
-                                    // 创建圆角矩形作为拐弯连接
-                                    ctx.fillStyle = player.color;
-                                    ctx.shadowColor = player.color;
-                                    ctx.shadowBlur = 5;
-                                    ctx.beginPath();
-                                    ctx.roundRect(-gridSize/2, -gridSize/2, gridSize, gridSize, 8);
-                                    ctx.fill();
-                                    ctx.shadowBlur = 0;
+                                    // 计算转弯方向
+                                    const fromDirection = {
+                                        x: current.x - prev.x,
+                                        y: current.y - prev.y
+                                    };
+                                    const toDirection = {
+                                        x: next.x - current.x,
+                                        y: next.y - current.y
+                                    };
                                     
-                                    // 绘制身体图片
-                                    ctx.globalCompositeOperation = 'source-over';
-                                    ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
-                                    ctx.restore();
+                                    let turnImage = null;
+                                    let rotation = 0;
+                                    
+                                    // 判断转弯类型并选择对应图片
+                                    if ((fromDirection.x === -15 && toDirection.y === 15) || (fromDirection.y === -15 && toDirection.x === 15)) {
+                                        // 右下转弯：从左到下 或 从上到右
+                                        turnImage = snakeTurnEImage;
+                                        rotation = 0;
+                                    } else if ((fromDirection.x === 15 && toDirection.y === 15) || (fromDirection.y === -15 && toDirection.x === -15)) {
+                                        // 左下转弯：从右到下 或 从上到左
+                                        turnImage = snakeTurnQImage;
+                                        rotation = 0;
+                                    } else if ((fromDirection.x === 15 && toDirection.y === -15) || (fromDirection.y === 15 && toDirection.x === -15)) {
+                                        // 左上转弯：从右到上 或 从下到左
+                                        turnImage = snakeTurnRImage;
+                                        rotation = 0;
+                                    } else if ((fromDirection.x === -15 && toDirection.y === -15) || (fromDirection.y === 15 && toDirection.x === 15)) {
+                                        // 右上转弯：从左到上 或 从下到右
+                                        turnImage = snakeTurnWImage;
+                                        rotation = 0;
+                                    }
+                                    
+                                    if (turnImage && turnImage.complete) {
+                                        ctx.save();
+                                        ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                        ctx.rotate(rotation);
+                                        ctx.drawImage(turnImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                        ctx.restore();
+                                    } else {
+                                        // 转弯图片未加载，使用普通蛇身图片
+                                        ctx.save();
+                                        ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                        ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                        ctx.restore();
+                                    }
                                 } else {
-                                    // 直线段正常绘制
+                                    // 直线段：使用普通蛇身图片
+                                    let rotation = 0;
+                                    switch (bodyDirection) {
+                                        case 'up': rotation = -Math.PI / 2; break;
+                                        case 'down': rotation = Math.PI / 2; break;
+                                        case 'left': rotation = Math.PI; break;
+                                        case 'right': rotation = 0; break;
+                                    }
+                                    
                                     ctx.save();
                                     ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
                                     ctx.rotate(rotation);
@@ -1514,16 +1640,8 @@
             
             // 绘制自己的蛇
             snake.forEach((segment, index) => {
-                // 蛇头特殊样式
+                // 蛇头（简化显示）
                 if (index === 0) {
-                    // 蛇头背景
-                    ctx.fillStyle = '#FF3333';
-                    ctx.shadowColor = '#FF3333';
-                    ctx.shadowBlur = 10;
-                    ctx.beginPath();
-                    ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
                     
                     // 绘制蛇头图片（正方形）
                     if (snakeHeadImage && snakeHeadImage.complete) {
@@ -1642,37 +1760,67 @@
                             else if (last.y < secondLast.y) bodyDirection = 'up';
                         }
                         
-                        // 根据方向旋转图片
-                        let rotation = 0;
-                        switch (bodyDirection) {
-                            case 'up': rotation = -Math.PI / 2; break;
-                            case 'down': rotation = Math.PI / 2; break;
-                            case 'left': rotation = Math.PI; break;
-                            case 'right': rotation = 0; break;
-                        }
-                        
                         if (isCorner) {
-                            // 拐弯点特殊绘制
-                            ctx.save();
-                            ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
-                            ctx.rotate(rotation);
+                            // 转弯点：使用专用转弯图片
+                            const prev = snake[index - 1];
+                            const next = snake[index + 1];
+                            const current = segment;
                             
-                            // 创建圆角矩形作为拐弯连接
-                            const colorIndex = (index % memeColors.length);
-                            ctx.fillStyle = memeColors[colorIndex];
-                            ctx.shadowColor = memeColors[colorIndex];
-                            ctx.shadowBlur = 5;
-                            ctx.beginPath();
-                            ctx.roundRect(-gridSize/2, -gridSize/2, gridSize, gridSize, 8);
-                            ctx.fill();
-                            ctx.shadowBlur = 0;
+                            // 计算转弯方向
+                            const fromDirection = {
+                                x: current.x - prev.x,
+                                y: current.y - prev.y
+                            };
+                            const toDirection = {
+                                x: next.x - current.x,
+                                y: next.y - current.y
+                            };
                             
-                            // 绘制身体图片
-                            ctx.globalCompositeOperation = 'source-over';
-                            ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
-                            ctx.restore();
+                            let turnImage = null;
+                            let rotation = 0;
+                            
+                            // 判断转弯类型并选择对应图片
+                            if ((fromDirection.x === -15 && toDirection.y === 15) || (fromDirection.y === -15 && toDirection.x === 15)) {
+                                // 右下转弯：从左到下 或 从上到右
+                                turnImage = snakeTurnEImage;
+                                rotation = 0;
+                            } else if ((fromDirection.x === 15 && toDirection.y === 15) || (fromDirection.y === -15 && toDirection.x === -15)) {
+                                // 左下转弯：从右到下 或 从上到左
+                                turnImage = snakeTurnQImage;
+                                rotation = 0;
+                            } else if ((fromDirection.x === 15 && toDirection.y === -15) || (fromDirection.y === 15 && toDirection.x === -15)) {
+                                // 左上转弯：从右到上 或 从下到左
+                                turnImage = snakeTurnRImage;
+                                rotation = 0;
+                            } else if ((fromDirection.x === -15 && toDirection.y === -15) || (fromDirection.y === 15 && toDirection.x === 15)) {
+                                // 右上转弯：从左到上 或 从下到右
+                                turnImage = snakeTurnWImage;
+                                rotation = 0;
+                            }
+                            
+                            if (turnImage && turnImage.complete) {
+                                ctx.save();
+                                ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                ctx.rotate(rotation);
+                                ctx.drawImage(turnImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                ctx.restore();
+                            } else {
+                                // 转弯图片未加载，使用普通蛇身图片
+                                ctx.save();
+                                ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                ctx.restore();
+                            }
                         } else {
-                            // 直线段正常绘制
+                            // 直线段：使用普通蛇身图片
+                            let rotation = 0;
+                            switch (bodyDirection) {
+                                case 'up': rotation = -Math.PI / 2; break;
+                                case 'down': rotation = Math.PI / 2; break;
+                                case 'left': rotation = Math.PI; break;
+                                case 'right': rotation = 0; break;
+                            }
+                            
                             ctx.save();
                             ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
                             ctx.rotate(rotation);
@@ -1839,6 +1987,9 @@
             isGameRunning = true;
             isPaused = false;
             
+            // 开始播放背景音乐
+            startBackgroundMusic();
+            
             // 初始化游戏
             initGame();
             
@@ -1893,6 +2044,13 @@
             pauseBtn.innerHTML = isPaused ? 
                 '<i class="fa fa-play text-xl"></i>' : 
                 '<i class="fa fa-pause text-xl"></i>';
+            
+            // 暂停/恢复音乐
+            if (isPaused && isMusicPlaying) {
+                bgMusic.pause();
+            } else if (!isPaused && !isMusicPlaying) {
+                bgMusic.play();
+            }
         }
         
         // 游戏结束
@@ -2219,6 +2377,85 @@
             }
         }
         
+        // 音乐控制函数
+        function startBackgroundMusic() {
+            if (bgMusic && !isMusicPlaying) {
+                bgMusic.volume = musicVolume;
+                bgMusic.play().then(() => {
+                    isMusicPlaying = true;
+                    updateMusicUI();
+                }).catch(error => {
+                    console.log('Music autoplay failed:', error);
+                    // 用户交互后可以播放音乐
+                });
+            }
+        }
+        
+        function toggleMusic() {
+            if (!bgMusic) return;
+            
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                isMusicPlaying = false;
+            } else {
+                bgMusic.play();
+                isMusicPlaying = true;
+            }
+            updateMusicUI();
+        }
+        
+        function updateMusicUI() {
+            if (!musicBtn || !musicIndicator) return;
+            
+            if (isMusicPlaying) {
+                musicBtn.innerHTML = '<i class="fa fa-music"></i>';
+                musicBtn.classList.remove('muted');
+                musicIndicator.classList.remove('muted');
+            } else {
+                musicBtn.innerHTML = '<i class="fa fa-volume-off"></i>';
+                musicBtn.classList.add('muted');
+                musicIndicator.classList.add('muted');
+            }
+        }
+        
+        function setMusicVolume(volume) {
+            musicVolume = Math.max(0, Math.min(1, volume));
+            if (bgMusic) {
+                bgMusic.volume = musicVolume;
+            }
+        }
+        
+        function setSoundVolume(volume) {
+            soundVolume = Math.max(0, Math.min(1, volume));
+            if (eatSound) {
+                eatSound.volume = soundVolume;
+            }
+        }
+        
+        function playEatSound() {
+            if (eatSound) {
+                eatSound.volume = soundVolume;
+                eatSound.currentTime = 0; // 重置播放位置
+                eatSound.play().catch(error => {
+                    console.log('Sound effect play failed:', error);
+                });
+            }
+        }
+        
+        // 初始化音乐控制
+        function initMusicControl() {
+            if (musicBtn) {
+                musicBtn.addEventListener('click', toggleMusic);
+            }
+            
+            // 设置初始音量
+            setMusicVolume(0.5);
+            setSoundVolume(0.7);
+            
+            // 更新UI状态
+            updateMusicUI();
+        }
+        
         // 事件监听
         document.addEventListener('keydown', handleKeyPress);
         startBtn.addEventListener('click', startGame);
@@ -2378,6 +2615,9 @@
         
         // 页面加载时初始化排行榜
         document.addEventListener('DOMContentLoaded', () => {
+            // 初始化音乐控制
+            initMusicControl();
+            
             // 其他初始化代码...
         });
     </script>
