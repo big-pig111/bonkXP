@@ -4,9 +4,8 @@
   "description": "Windows XP Simulator with Multiplayer Snake Game and Blockchain Integration",
   "main": "index.html",
   "scripts": {
-    "start": "echo '请直接在浏览器中打开 index.html'",
-    "dev": "echo '请直接在浏览器中打开 index.html'",
-    "build": "echo '静态网站，无需构建'"
+    "start": "echo '静态网站，直接访问 index.html'",
+    "dev": "echo '静态网站，直接访问 index.html'"
   },
   "keywords": [
     "windows-xp",
