@@ -146,6 +146,20 @@
             background: #FF3333;
             animation: none;
         }
+        
+        .wiggle {
+            animation: wiggle 0.5s ease-in-out infinite;
+        }
+        
+        .countdown-animation {
+            animation: countdownPulse 1s ease-in-out;
+        }
+        
+        @keyframes countdownPulse {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body class="bg-gray-900 font-meme min-h-screen flex flex-col items-center justify-center p-4 text-white overflow-x-hidden">
@@ -230,10 +244,10 @@
                 <div class="mb-4 w-full max-w-xs">
                     <label for="roomSelect" class="block text-left mb-2 text-memeBlue">Select Room</label>
                     <select id="roomSelect" class="w-full bg-gray-700 border border-memeBlue rounded p-2 text-white font-meme">
-                        <option value="default">Default Room</option>
-                        <option value="room1">Room 1 - Beginner</option>
-                        <option value="room2">Room 2 - Advanced</option>
-                        <option value="room3">Room 3 - Casual</option>
+                        <option value="default">Default Room (0/10)</option>
+                        <option value="room1">Room 1 - Beginner (0/10)</option>
+                        <option value="room2">Room 2 - Advanced (0/10)</option>
+                        <option value="room3">Room 3 - Casual (0/10)</option>
                     </select>
                 </div>
                 <div class="mb-6 w-full max-w-xs">
@@ -265,6 +279,14 @@
                 <button id="restartBtn" class="bg-memeGreen hover:bg-memeGreen/80 text-white text-2xl py-3 px-8 rounded-full transform transition-transform hover:scale-110 active:scale-95 font-bold shadow-lg">
                     Play Again <i class="fa fa-refresh ml-2"></i>
                 </button>
+            </div>
+            
+            <!-- Game Countdown Screen -->
+            <div id="countdownScreen" class="absolute inset-0 bg-gray-900/90 flex items-center justify-center z-15 hidden">
+                <div class="text-center">
+                    <div id="countdownNumber" class="text-8xl font-bold text-memeYellow mb-4 countdown-animation">3</div>
+                    <div class="text-2xl text-white">Get Ready!</div>
+                </div>
             </div>
             
             <!-- Pause Button -->
@@ -797,40 +819,67 @@
                 }
             });
             
-            // Draw initial state
+            // Draw initial state immediately
             draw();
+            
+            // Set up a timer to keep drawing during countdown
+            const drawInterval = setInterval(() => {
+                if (isPaused && isGameRunning) {
+                    // Keep drawing during countdown
+                    draw();
+                } else {
+                    clearInterval(drawInterval);
+                }
+            }, 100); // Draw 10 times per second during countdown
         }
         
         // Save player info to Firebase
         function savePlayerInfo() {
-            const playerRef = database.ref(`rooms/${gameRoom}/players/${playerId}`);
-            
-            // Set player initial info
-            playerRef.set({
-                name: playerName,
-                wallet: playerWallet,
-                snake: snake,
-                direction: direction,
-                score: score,
-                alive: true,
-                color: playerColor || memeColors[Math.floor(Math.random() * memeColors.length)],
-                room: gameRoom,
-                lastActive: Date.now()
-            });
-            
-            // Remove player when page closes
-            window.addEventListener('beforeunload', () => {
-                playerRef.remove();
-            });
-            
-            // Regularly update last active time
-            setInterval(() => {
-                if (isGameRunning && !isPaused) {
-                    playerRef.update({
-                        lastActive: Date.now()
-                    });
+            // Check room player limit before saving
+            database.ref(`rooms/${gameRoom}/players`).once('value', (snapshot) => {
+                const players = snapshot.val() || {};
+                const currentPlayerCount = Object.keys(players).length;
+                
+                // Check if room is full (max 10 players)
+                if (currentPlayerCount >= 10) {
+                    alert('This room is full! Maximum 10 players allowed. Please try another room.');
+                    // Reset game state
+                    isGameRunning = false;
+                    startScreen.classList.remove('hidden');
+                    pauseBtn.classList.add('hidden');
+                    roomSwitchBtn.classList.add('hidden');
+                    return;
                 }
-            }, 5000);
+                
+                const playerRef = database.ref(`rooms/${gameRoom}/players/${playerId}`);
+                
+                // Set player initial info
+                playerRef.set({
+                    name: playerName,
+                    wallet: playerWallet,
+                    snake: snake,
+                    direction: direction,
+                    score: score,
+                    alive: true,
+                    color: playerColor || memeColors[Math.floor(Math.random() * memeColors.length)],
+                    room: gameRoom,
+                    lastActive: Date.now()
+                });
+                
+                // Remove player when page closes
+                window.addEventListener('beforeunload', () => {
+                    playerRef.remove();
+                });
+                
+                // Regularly update last active time
+                setInterval(() => {
+                    if (isGameRunning && !isPaused) {
+                        playerRef.update({
+                            lastActive: Date.now()
+                        });
+                    }
+                }, 5000);
+            });
         }
         
         // Listen for game updates
@@ -1275,11 +1324,21 @@
                 database.ref(`rooms/${gameRoom}/players/${playerId}`).update({
                     score: score
                 });
-                
-                // Also update total points under user wallet
-                database.ref(`users/${playerWallet}`).update({
-                    score: score,
-                    lastUpdated: Date.now()
+            }
+        }
+        
+        // Update total user score (called when game ends)
+        function updateTotalUserScore() {
+            if (playerWallet && score > 0) {
+                database.ref(`users/${playerWallet}`).once('value', (snapshot) => {
+                    const userData = snapshot.val() || {};
+                    const currentTotalScore = userData.score || 0;
+                    const newTotalScore = currentTotalScore + score;
+                    
+                    database.ref(`users/${playerWallet}`).update({
+                        score: newTotalScore,
+                        lastUpdated: Date.now()
+                    });
                 });
             }
         }
@@ -2092,7 +2151,7 @@
             pauseBtn.classList.remove('hidden');
             roomSwitchBtn.classList.remove('hidden');
             isGameRunning = true;
-            isPaused = false;
+            isPaused = true; // Start paused for countdown
             
             // 开始播放背景音乐
             startBackgroundMusic();
@@ -2102,6 +2161,103 @@
             
             // 标记为有效用户（如果使用了邀请码）
             loadInviteDataForGame();
+            
+            // 显示倒计时屏幕
+            showCountdownScreen();
+        }
+        
+        // 显示倒计时屏幕
+        function showCountdownScreen() {
+            const countdownScreen = document.getElementById('countdownScreen');
+            const countdownNumber = document.getElementById('countdownNumber');
+            
+            countdownScreen.classList.remove('hidden');
+            
+            let count = 3;
+            countdownNumber.textContent = count;
+            
+            // Play countdown sound
+            playCountdownSound();
+            
+            const countdownInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownNumber.textContent = count;
+                    // Reset animation
+                    countdownNumber.classList.remove('countdown-animation');
+                    void countdownNumber.offsetWidth; // Trigger reflow
+                    countdownNumber.classList.add('countdown-animation');
+                    // Play countdown sound
+                    playCountdownSound();
+                } else {
+                    // Countdown finished
+                    clearInterval(countdownInterval);
+                    countdownScreen.classList.add('hidden');
+                    
+                    // Play start sound
+                    playStartSound();
+                    
+                    // Start the actual game
+                    startActualGame();
+                }
+            }, 1000);
+        }
+        
+        // 播放倒计时音效
+        function playCountdownSound() {
+            // Create a simple beep sound using Web Audio API
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.1);
+            } catch (error) {
+                console.log('Audio not supported or blocked');
+            }
+        }
+        
+        // 播放开始音效
+        function playStartSound() {
+            // Create a different sound for game start
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.2);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            } catch (error) {
+                console.log('Audio not supported or blocked');
+            }
+        }
+        
+        // 开始实际游戏
+        function startActualGame() {
+            isPaused = false;
+            
+            // 立即绘制一次游戏画面
+            draw();
             
             // 检查游戏状态
             database.ref('gameState').once('value', (snapshot) => {
@@ -2188,6 +2344,9 @@
                 const leaderboard = snapshot.val() || [];
                 updateLeaderboardDisplay(leaderboard);
             });
+            
+            // Update total user score
+            updateTotalUserScore();
         }
         
         // 创建尸体食物
@@ -2457,21 +2616,40 @@
                     // 显示成功弹窗
                 showSuccessModal(combinedResult, totalTokenAmount);
                     
-                    // 刷新积分显示
-                    setTimeout(() => {
-                        checkScore();
-                    }, 1000);
+                // 兑换成功后清零用户积分
+                try {
+                    await setUserScore(walletAddress, 0);
+                    console.log('Cleared user score after successful claim');
+                } catch (clearError) {
+                    console.error('Failed to clear user score:', clearError);
+                }
+                    
+                // 刷新积分显示
+                setTimeout(() => {
+                    checkScore();
+                }, 1000);
                 
             } catch (error) {
                 console.error('Claim token error:', error);
                 showClaimResult('Claim failed: ' + error.message, 'error');
+                
+                // 如果兑换失败，恢复用户的累计积分
+                try {
+                    const originalScore = parseInt(document.getElementById('totalScore').textContent) || 0;
+                    if (originalScore > 0) {
+                        await setUserScore(walletAddress, originalScore);
+                        console.log('Restored user score after failed claim');
+                    }
+                } catch (restoreError) {
+                    console.error('Failed to restore user score:', restoreError);
+                }
             }
         }
         
-        // 辅助函数：设置用户积分
+        // 辅助函数：设置用户积分（仅用于代币兑换时的临时设置）
         async function setUserScore(walletAddress, score) {
             try {
-                console.log(`Starting to set score: ${walletAddress.substring(0, 8)}... -> ${score}`);
+                console.log(`Starting to set temporary score: ${walletAddress.substring(0, 8)}... -> ${score}`);
                 
                 const userRef = database.ref(`users/${walletAddress}`);
                 await userRef.update({
@@ -2482,7 +2660,7 @@
                 // Verify if setting was successful
                 const snapshot = await userRef.once('value');
                 const userData = snapshot.val();
-                console.log(`Score setting successful: ${walletAddress.substring(0, 8)}...`, userData);
+                console.log(`Temporary score setting successful: ${walletAddress.substring(0, 8)}...`, userData);
                 
             } catch (error) {
                 console.error('Failed to set user score:', error);
@@ -2618,22 +2796,23 @@
         
         // 重启游戏
         function restartGame() {
-            // 移除旧玩家数据
+            // 清除游戏循环
+            clearInterval(gameLoop);
+            
+            // 重置游戏状态
+            isGameRunning = false;
+            isPaused = false;
+            
+            // 隐藏游戏结束屏幕
+            gameOverScreen.classList.add('hidden');
+            
+            // 移除当前房间的玩家数据
             if (playerId) {
                 database.ref(`rooms/${gameRoom}/players/${playerId}`).remove();
             }
             
-            gameOverScreen.classList.add('hidden');
-            
-            // 重新显示开始屏幕，让用户重新输入钱包地址
-            startScreen.classList.remove('hidden');
-            pauseBtn.classList.add('hidden');
-            roomSwitchBtn.classList.add('hidden');
-            isGameRunning = false;
-            isPaused = false;
-            
-            // 清空钱包地址输入框
-            playerNameInput.value = '';
+            // 重新开始游戏（包含倒计时）
+            startGame();
         }
         
         // 处理键盘输入
@@ -3137,6 +3316,17 @@
         // 默认选择第一个颜色
         document.querySelector('.color-btn').click();
         
+        // Initialize room player counts and set up real-time updates
+        updateRoomPlayerCounts();
+        
+        // Set up real-time room player count updates
+        const rooms = ['default', 'room1', 'room2', 'room3'];
+        rooms.forEach(roomName => {
+            database.ref(`rooms/${roomName}/players`).on('value', () => {
+                updateRoomPlayerCounts();
+            });
+        });
+        
         // 排行榜功能函数
         function showLeaderboardModal() {
             const modal = document.getElementById('leaderboardModal');
@@ -3258,6 +3448,40 @@
             
             // 其他初始化代码...
         });
+        
+        // Update room player counts
+        function updateRoomPlayerCounts() {
+            const rooms = ['default', 'room1', 'room2', 'room3'];
+            const roomSelect = document.getElementById('roomSelect');
+            
+            rooms.forEach(roomName => {
+                database.ref(`rooms/${roomName}/players`).once('value', (snapshot) => {
+                    const players = snapshot.val() || {};
+                    const playerCount = Object.keys(players).length;
+                    
+                    // Update the corresponding option in the select
+                    const option = roomSelect.querySelector(`option[value="${roomName}"]`);
+                    if (option) {
+                        const roomNames = {
+                            'default': 'Default Room',
+                            'room1': 'Room 1 - Beginner',
+                            'room2': 'Room 2 - Advanced',
+                            'room3': 'Room 3 - Casual'
+                        };
+                        const displayName = roomNames[roomName] || roomName;
+                        option.textContent = `${displayName} (${playerCount}/10)`;
+                        
+                        // Add visual indication if room is full
+                        if (playerCount >= 10) {
+                            option.style.color = '#ff4444';
+                            option.textContent += ' [FULL]';
+                        } else {
+                            option.style.color = '#ffffff';
+                        }
+                    }
+                });
+            });
+        }
     </script>
 </body>
 </html>
