@@ -265,7 +265,7 @@
                         </div>
                     </div>
                     
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 mb-4">
                         <button id="checkScoreBtn" class="flex-1 bg-memeBlue hover:bg-memeBlue/80 text-white py-2 px-4 rounded font-bold">
                             Check Points
                         </button>
@@ -274,9 +274,61 @@
                         </button>
                     </div>
                     
+                    <div class="flex gap-2">
+                        <button id="viewLeaderboardBtn" class="flex-1 bg-memePink hover:bg-memePink/80 text-white py-2 px-4 rounded font-bold">
+                            <i class="fa fa-trophy mr-2"></i>Global Leaderboard
+                        </button>
+                    </div>
+                    
                     <div id="claimResult" class="mt-4 p-3 rounded hidden">
                         <!-- Result display area -->
                     </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Global Leaderboard Modal -->
+        <div id="leaderboardModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
+            <div class="bg-gray-800 p-6 rounded-lg border-2 border-memePink max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-memePink">
+                        <i class="fa fa-trophy mr-2"></i>Global Leaderboard
+                    </h3>
+                    <button id="closeLeaderboardModal" class="text-gray-400 hover:text-white text-xl">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="flex gap-2 mb-4">
+                        <select id="leaderboardRoomSelect" class="flex-1 bg-gray-700 border border-memePink rounded p-2 text-white">
+                            <option value="all">All Rooms</option>
+                            <option value="default">Default Room</option>
+                            <option value="room1">Room 1 - Beginner</option>
+                            <option value="room2">Room 2 - Advanced</option>
+                            <option value="room3">Room 3 - Casual</option>
+                        </select>
+                        <button id="refreshLeaderboardBtn" class="bg-memePink hover:bg-memePink/80 text-white py-2 px-4 rounded font-bold">
+                            <i class="fa fa-refresh mr-2"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-700 rounded p-4">
+                    <div class="grid grid-cols-4 gap-4 mb-4 text-center text-sm font-bold text-memePink">
+                        <div>Rank</div>
+                        <div>Player</div>
+                        <div>Score</div>
+                        <div>Date</div>
+                    </div>
+                    <div id="globalLeaderboardList" class="space-y-2">
+                        <!-- Leaderboard entries will be loaded here -->
+                    </div>
+                </div>
+                
+                <div class="mt-4 text-center text-sm text-gray-400">
+                    <p>🏆 Top players across all rooms</p>
+                    <p>💎 Scores are updated in real-time</p>
                 </div>
             </div>
         </div>
@@ -2180,6 +2232,12 @@
         document.getElementById('checkScoreBtn').addEventListener('click', checkScore);
         document.getElementById('claimTokenBtn').addEventListener('click', claimToken);
         
+        // 排行榜相关事件监听
+        document.getElementById('viewLeaderboardBtn').addEventListener('click', showLeaderboardModal);
+        document.getElementById('closeLeaderboardModal').addEventListener('click', hideLeaderboardModal);
+        document.getElementById('refreshLeaderboardBtn').addEventListener('click', loadGlobalLeaderboard);
+        document.getElementById('leaderboardRoomSelect').addEventListener('change', loadGlobalLeaderboard);
+        
         // 颜色选择
         document.querySelectorAll('.color-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -2203,6 +2261,125 @@
         
         // 默认选择第一个颜色
         document.querySelector('.color-btn').click();
+        
+        // 排行榜功能函数
+        function showLeaderboardModal() {
+            const modal = document.getElementById('leaderboardModal');
+            modal.classList.remove('hidden');
+            loadGlobalLeaderboard();
+        }
+        
+        function hideLeaderboardModal() {
+            const modal = document.getElementById('leaderboardModal');
+            modal.classList.add('hidden');
+        }
+        
+        async function loadGlobalLeaderboard() {
+            const roomSelect = document.getElementById('leaderboardRoomSelect');
+            const selectedRoom = roomSelect.value;
+            const leaderboardList = document.getElementById('globalLeaderboardList');
+            
+            // 显示加载状态
+            leaderboardList.innerHTML = '<div class="text-center text-gray-400">Loading leaderboard...</div>';
+            
+            try {
+                let allLeaderboards = [];
+                
+                if (selectedRoom === 'all') {
+                    // 获取所有房间的排行榜
+                    const rooms = ['default', 'room1', 'room2', 'room3'];
+                    const promises = rooms.map(room => 
+                        database.ref(`rooms/${room}/leaderboard`).once('value')
+                    );
+                    
+                    const results = await Promise.all(promises);
+                    results.forEach((snapshot, index) => {
+                        const leaderboard = snapshot.val() || [];
+                        // 为每个条目添加房间信息
+                        leaderboard.forEach(entry => {
+                            entry.room = rooms[index];
+                        });
+                        allLeaderboards = allLeaderboards.concat(leaderboard);
+                    });
+                } else {
+                    // 获取特定房间的排行榜
+                    const snapshot = await database.ref(`rooms/${selectedRoom}/leaderboard`).once('value');
+                    const leaderboard = snapshot.val() || [];
+                    leaderboard.forEach(entry => {
+                        entry.room = selectedRoom;
+                    });
+                    allLeaderboards = leaderboard;
+                }
+                
+                // 按分数降序排序
+                allLeaderboards.sort((a, b) => b.score - a.score);
+                
+                // 只显示前20名
+                allLeaderboards = allLeaderboards.slice(0, 20);
+                
+                // 显示排行榜
+                displayGlobalLeaderboard(allLeaderboards);
+                
+            } catch (error) {
+                console.error('Failed to load leaderboard:', error);
+                leaderboardList.innerHTML = '<div class="text-center text-red-400">Failed to load leaderboard</div>';
+            }
+        }
+        
+        function displayGlobalLeaderboard(leaderboard) {
+            const leaderboardList = document.getElementById('globalLeaderboardList');
+            leaderboardList.innerHTML = '';
+            
+            if (leaderboard.length === 0) {
+                leaderboardList.innerHTML = '<div class="text-center text-gray-400">No scores yet</div>';
+                return;
+            }
+            
+            leaderboard.forEach((entry, index) => {
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-4 gap-4 items-center py-2 border-b border-gray-600';
+                
+                // 设置排名样式
+                let rankClass = 'text-gray-400';
+                if (index === 0) rankClass = 'text-memeYellow font-bold';
+                else if (index === 1) rankClass = 'text-gray-300 font-bold';
+                else if (index === 2) rankClass = 'text-amber-700 font-bold';
+                
+                // 格式化时间
+                const date = new Date(entry.timestamp);
+                const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+                
+                // 格式化钱包地址
+                const shortWallet = entry.wallet ? 
+                    `${entry.wallet.substring(0, 6)}...${entry.wallet.substring(entry.wallet.length - 4)}` : 
+                    'Unknown';
+                
+                // 房间名称映射
+                const roomNames = {
+                    'default': 'Default',
+                    'room1': 'Beginner',
+                    'room2': 'Advanced',
+                    'room3': 'Casual'
+                };
+                
+                row.innerHTML = `
+                    <div class="${rankClass} text-center">#${index + 1}</div>
+                    <div class="text-white">
+                        <div class="font-bold">${entry.playerName}</div>
+                        <div class="text-xs text-gray-400">${shortWallet} • ${roomNames[entry.room] || entry.room}</div>
+                    </div>
+                    <div class="text-memeGreen font-bold text-center">${entry.score}</div>
+                    <div class="text-gray-400 text-center text-sm">${timeStr}</div>
+                `;
+                
+                leaderboardList.appendChild(row);
+            });
+        }
+        
+        // 页面加载时初始化排行榜
+        document.addEventListener('DOMContentLoaded', () => {
+            // 其他初始化代码...
+        });
     </script>
 </body>
 </html>
