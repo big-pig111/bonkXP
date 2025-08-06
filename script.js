@@ -170,7 +170,7 @@ class WindowsXP {
                 title: 'Paint',
                     content: this.createPaintContent(),
                 width: 600,
-                height: 500
+                    height: 500
             };
             break;
         case 'wordpad':
@@ -211,8 +211,8 @@ class WindowsXP {
                     content: this.createRecycleBinContent(),
                     width: 800,
                     height: 700
-                };
-                break;
+            };
+            break;
             case 'internet-explorer':
             windowConfig = {
                     title: 'Internet Explorer',
@@ -320,9 +320,9 @@ class WindowsXP {
     createPaintContent() {
         return `
             <div style="text-align: center; padding: 50px;">
-                <h3>画图程序</h3>
-                <p>这是一个模拟的画图程序</p>
-                <p>功能开发中...</p>
+                            <h3>Paint Program</h3>
+            <p>This is a simulated paint program</p>
+            <p>Features under development...</p>
             </div>
         `;
     }
@@ -330,9 +330,9 @@ class WindowsXP {
     createWordpadContent() {
         return `
             <div style="text-align: center; padding: 50px;">
-                <h3>写字板</h3>
-                <p>这是一个模拟的写字板程序</p>
-                <p>功能开发中...</p>
+                            <h3>WordPad</h3>
+            <p>This is a simulated wordpad program</p>
+            <p>Features under development...</p>
             </div>
         `;
     }
@@ -340,7 +340,7 @@ class WindowsXP {
 
 
     createMyComputerContent() {
-        return `
+    return `
             <div style="padding: 20px; font-family: 'Tahoma', sans-serif;">
                 <h3 style="color: #245edc; margin-bottom: 20px;">System Performance Monitor</h3>
                 
@@ -350,15 +350,15 @@ class WindowsXP {
                         <div style="display: flex; align-items: center; margin-bottom: 10px;">
                             <i class="fas fa-microchip" style="font-size: 24px; color: #245edc; margin-right: 10px;"></i>
                             <h4 style="margin: 0; color: #245edc;">CPU Usage</h4>
-                        </div>
+                </div>
                         <div style="background: white; border: 2px inset #c0c0c0; border-radius: 4px; padding: 10px; margin-bottom: 10px;">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                                 <span>Current:</span>
                                 <span id="cpu-usage" style="font-weight: bold; color: #245edc;">45%</span>
-                            </div>
+                </div>
                             <div style="background: #e0e0e0; height: 20px; border-radius: 3px; overflow: hidden;">
                                 <div id="cpu-bar" style="background: linear-gradient(90deg, #245edc 0%, #4a6fd8 100%); height: 100%; width: 45%; transition: width 0.3s ease;"></div>
-                            </div>
+                </div>
                         </div>
                         <div style="font-size: 12px; color: #666;">
                             <div>Processor: Intel Core i7-9700K</div>
@@ -459,14 +459,14 @@ class WindowsXP {
                     </div>
                     <div style="margin-top: 10px; font-size: 11px; color: #666;">
                         Auto update every 2 seconds
-                    </div>
                 </div>
             </div>
-        `;
-    }
+        </div>
+    `;
+}
 
     createMyDocumentsContent() {
-        return `
+    return `
             <div style="padding: 20px; font-family: 'Tahoma', sans-serif;">
                 <h3 style="color: #245edc; margin-bottom: 20px;">My Documents</h3>
                 
@@ -508,13 +508,13 @@ class WindowsXP {
                         <div style="padding: 5px 0; border-bottom: 1px solid #e0e0e0;">📄 network_settings.cfg - Modified 3 days ago</div>
                         <div style="padding: 5px 0;">📄 wallpaper_backup.dat - Modified 1 week ago</div>
                     </div>
-                </div>
             </div>
-        `;
-    }
+        </div>
+    `;
+}
 
     createRecycleBinContent() {
-        return `
+    return `
             <div style="padding: 20px; font-family: 'Tahoma', sans-serif; line-height: 1.6; max-height: 100%; overflow-y: auto;">
                 <div style="text-align: center; margin-bottom: 20px;">
                     <h2 style="color: #245edc; font-size: 18px; margin-bottom: 10px;">On the On-Chain Co-construction Initiative in Support of BonkXP</h2>
@@ -564,13 +564,13 @@ class WindowsXP {
                     <div style="text-align: center; margin-top: 20px;">
                         <p style="font-weight: bold; color: #245edc; font-size: 14px;">BonkXP Node Maintenance Team</p>
                     </div>
-                </div>
             </div>
-        `;
-    }
+        </div>
+    `;
+}
 
     createInternetExplorerContent() {
-        return `
+    return `
             <div style="width: 100%; height: 100%; padding: 0; margin: 0; position: relative;">
                 <!-- Loading Animation -->
                 <div id="ie-loading" style="
@@ -604,7 +604,7 @@ class WindowsXP {
                     ">
                         <div>Loading...</div>
                         <div style="font-size: 12px; color: #666; margin-top: 5px;">Please wait while the page loads</div>
-                    </div>
+            </div>
                 </div>
                 
                 <!-- Website iframe -->
@@ -614,9 +614,9 @@ class WindowsXP {
                         allowfullscreen
                         onload="document.getElementById('ie-loading').style.display='none'; document.getElementById('ie-iframe').style.opacity='1';">
                 </iframe>
-            </div>
-        `;
-    }
+        </div>
+    `;
+}
 
 
 
@@ -668,87 +668,87 @@ class WindowsXP {
                             </div>
                         </div>
                         
-                        <!-- 注册表单 -->
+                        <!-- Registration Form -->
                         <div id="registerForm" style="display: none;">
                             <div style="margin-bottom: 18px;">
                                 <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #000080; font-weight: bold;">
-                                    <i class="fas fa-user" style="margin-right: 5px;"></i>用户名:
+                                    <i class="fas fa-user" style="margin-right: 5px;"></i>Username:
                                 </label>
-                                <input type="text" id="registerUsername" style="width: 100%; padding: 8px; border: 2px inset #c0c0c0; border-radius: 4px; font-size: 12px; background: white; box-sizing: border-box;" placeholder="请输入用户名">
+                                <input type="text" id="registerUsername" style="width: 100%; padding: 8px; border: 2px inset #c0c0c0; border-radius: 4px; font-size: 12px; background: white; box-sizing: border-box;" placeholder="Enter username">
                             </div>
                             
                             <div style="margin-bottom: 18px;">
                                 <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #000080; font-weight: bold;">
-                                    <i class="fas fa-lock" style="margin-right: 5px;"></i>密码:
+                                    <i class="fas fa-lock" style="margin-right: 5px;"></i>Password:
                                 </label>
-                                <input type="password" id="registerPassword" style="width: 100%; padding: 8px; border: 2px inset #c0c0c0; border-radius: 4px; font-size: 12px; background: white; box-sizing: border-box;" placeholder="请输入密码">
+                                <input type="password" id="registerPassword" style="width: 100%; padding: 8px; border: 2px inset #c0c0c0; border-radius: 4px; font-size: 12px; background: white; box-sizing: border-box;" placeholder="Enter password">
                             </div>
                             
                             <div style="margin-bottom: 18px;">
                                 <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #000080; font-weight: bold;">
-                                    <i class="fas fa-check-circle" style="margin-right: 5px;"></i>确认密码:
+                                    <i class="fas fa-check-circle" style="margin-right: 5px;"></i>Confirm Password:
                                 </label>
-                                <input type="password" id="confirmPassword" style="width: 100%; padding: 8px; border: 2px inset #c0c0c0; border-radius: 4px; font-size: 12px; background: white; box-sizing: border-box;" placeholder="请再次输入密码">
+                                <input type="password" id="confirmPassword" style="width: 100%; padding: 8px; border: 2px inset #c0c0c0; border-radius: 4px; font-size: 12px; background: white; box-sizing: border-box;" placeholder="Enter password again">
                             </div>
                             
 
                             
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <button id="showLoginBtn" style="padding: 8px 16px; background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%); border: 2px outset #c0c0c0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; color: #000080; transition: all 0.2s;">
-                                    <i class="fas fa-arrow-left" style="margin-right: 5px;"></i>返回登录
+                                    <i class="fas fa-arrow-left" style="margin-right: 5px;"></i>Back to Login
                                 </button>
                                 <button id="registerButton" style="padding: 10px 20px; background: linear-gradient(135deg, #008000 0%, #32cd32 100%); border: 2px outset #c0c0c0; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; color: white; transition: all 0.2s;">
-                                    <i class="fas fa-user-plus" style="margin-right: 5px;"></i>注册
+                                    <i class="fas fa-user-plus" style="margin-right: 5px;"></i>Register
                                 </button>
                             </div>
                         </div>
                         
-                        <!-- 消息显示区域 -->
+                        <!-- Message Display Area -->
                         <div id="authMessage" style="margin-top: 15px; padding: 8px; font-size: 11px; text-align: center; min-height: 20px; border-radius: 4px; background: rgba(255,255,255,0.7);"></div>
                     </div>
                 </div>
                 
-                <!-- 聊天区域 (默认隐藏) -->
+                <!-- Chat Area (Hidden by default) -->
                 <div id="chatArea" style="flex: 1; display: none; flex-direction: column; background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%); min-height: 0;">
                     <div style="display: flex; height: 100%; min-height: 0;">
-                        <!-- 左侧用户列表 -->
+                        <!-- Left User List -->
                         <div style="width: 220px; border-right: 3px solid #808080; display: flex; flex-direction: column; background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%); height: 100%; min-height: 0;">
                             <div style="background: linear-gradient(90deg, #000080 0%, #4169e1 50%, #000080 100%); color: white; padding: 8px; font-size: 12px; font-weight: bold; border-bottom: 2px solid #808080; flex-shrink: 0;">
-                                <i class="fas fa-users" style="margin-right: 8px;"></i>在线用户
+                                <i class="fas fa-users" style="margin-right: 8px;"></i>Online Users
                             </div>
                             <div id="userList" style="flex: 1; background: white; padding: 8px; overflow-y: auto; overflow-x: hidden; font-size: 12px; border-radius: 0 0 4px 0; scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: #c0c0c0 #f0f0f0; min-height: 0;" class="custom-scrollbar">
                                 <div style="color: #808080; font-style: italic; text-align: center; padding: 20px;">
-                                    <i class="fas fa-spinner fa-spin" style="margin-right: 5px;"></i>等待连接...
+                                    <i class="fas fa-spinner fa-spin" style="margin-right: 5px;"></i>Waiting for connection...
                                 </div>
                             </div>
         </div>
                         
-                        <!-- 右侧聊天区域 -->
+                        <!-- Right Chat Area -->
                         <div style="flex: 1; display: flex; flex-direction: column; height: 100%; min-height: 0;">
-                            <!-- 聊天消息区域 -->
+                            <!-- Chat Message Area -->
                             <div id="messageArea" style="flex: 1; background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%); padding: 15px; overflow-y: auto; overflow-x: hidden; font-size: 12px; border-radius: 0 0 0 4px; scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: #c0c0c0 #f0f0f0; min-height: 0;" class="custom-scrollbar">
                                 <div style="text-align: center; color: #666666; margin-bottom: 15px; padding: 20px;">
                                     <i class="fas fa-comments" style="font-size: 24px; color: #000080; margin-bottom: 10px; display: block;"></i>
-                                    <div style="font-size: 16px; font-weight: bold; color: #000080; margin-bottom: 5px;">欢迎来到 Windows XP 聊天室</div>
-                                    <div style="font-size: 12px;">请登录后开始聊天</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #000080; margin-bottom: 5px;">Welcome to Windows XP Chat Room</div>
+                                    <div style="font-size: 12px;">Please login to start chatting</div>
                                 </div>
                             </div>
                             
-                            <!-- 输入区域 - 固定高度 -->
+                            <!-- Input Area - Fixed Height -->
                             <div class="input-area" style="background: linear-gradient(135deg, #e8e8e8 0%, #d8d8d8 100%); padding: 15px; border-top: 3px solid #808080; border-radius: 0 0 4px 4px; flex-shrink: 0; overflow: hidden;">
-                                <textarea id="messageInput" style="width: 100%; height: 70px; border: 2px inset #c0c0c0; border-radius: 4px; padding: 8px; font-size: 12px; resize: none; background: white; box-sizing: border-box;" placeholder="输入消息..."></textarea>
+                                <textarea id="messageInput" style="width: 100%; height: 70px; border: 2px inset #c0c0c0; border-radius: 4px; padding: 8px; font-size: 12px; resize: none; background: white; box-sizing: border-box;" placeholder="Enter message..."></textarea>
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
                                     <div style="font-size: 11px; color: #666666;">
                                         <span id="connectionStatus" style="color: #ff4444; font-weight: bold;">
-                                            <i class="fas fa-circle" style="margin-right: 5px;"></i>未连接
+                                            <i class="fas fa-circle" style="margin-right: 5px;"></i>Disconnected
                                         </span>
                                     </div>
                                     <div style="display: flex; gap: 8px;">
-                                        <button id="scrollToBottomBtn" style="padding: 6px 12px; background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%); border: 2px outset #c0c0c0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; color: #000080; transition: all 0.2s; display: none;" title="滚动到最新消息">
-                                            <i class="fas fa-arrow-down" style="margin-right: 3px;"></i>最新
+                                        <button id="scrollToBottomBtn" style="padding: 6px 12px; background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%); border: 2px outset #c0c0c0; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; color: #000080; transition: all 0.2s; display: none;" title="Scroll to latest message">
+                                            <i class="fas fa-arrow-down" style="margin-right: 3px;"></i>Latest
                                         </button>
                                         <button id="sendButton" style="padding: 8px 16px; background: linear-gradient(135deg, #000080 0%, #4169e1 100%); border: 2px outset #c0c0c0; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; color: white; transition: all 0.2s;" disabled>
-                                            <i class="fas fa-paper-plane" style="margin-right: 5px;"></i>发送
+                                            <i class="fas fa-paper-plane" style="margin-right: 5px;"></i>Send
                                         </button>
                                     </div>
                                 </div>
@@ -761,10 +761,10 @@ class WindowsXP {
 } 
 
     initFullChatRoom(windowElement) {
-        console.log('initFullChatRoom被调用');
+        console.log('initFullChatRoom called');
         console.log('windowElement:', windowElement);
         
-        // 获取DOM元素
+        // Get DOM elements
         const loginButton = windowElement.querySelector('#loginButton');
         const registerButton = windowElement.querySelector('#registerButton');
         const showRegisterBtn = windowElement.querySelector('#showRegisterBtn');
@@ -916,7 +916,7 @@ class WindowsXP {
                     showMessage(response.message, 'success');
                     // 注册成功后显示成功提示并自动切换到登录表单
                     setTimeout(() => {
-                        showMessage('✅ 注册成功！正在切换到登录界面...', 'success');
+                        showMessage('✅ Registration successful! Switching to login interface...', 'success');
                         setTimeout(() => {
                             registerForm.style.display = 'none';
                             loginForm.style.display = 'block';
@@ -925,7 +925,7 @@ class WindowsXP {
                             if (loginUsernameInput) {
                                 loginUsernameInput.value = registerUsername;
                             }
-                            showMessage('🎉 注册成功！请输入密码进行登录', 'success');
+                            showMessage('🎉 Registration successful! Please enter your password to login', 'success');
                         }, 1500);
                     }, 1000);
                 } else {
@@ -933,7 +933,7 @@ class WindowsXP {
                 }
             } catch (error) {
                 console.error('注册失败:', error);
-                showMessage('注册失败，请重试', 'error');
+                                        showMessage('Registration failed, please try again', 'error');
             } finally {
                 // 恢复按钮状态
                 registerButton.disabled = false;
@@ -990,7 +990,7 @@ class WindowsXP {
                         
                         // 添加欢迎消息
                         setTimeout(() => {
-                            addMessage('系统', `欢迎 ${username} 加入聊天室！`, false, true);
+                            addMessage('System', `Welcome ${username} to the chat room!`, false, true);
                         }, 2000);
                     }, 1500); // 增加延迟确保Firebase初始化完成
                 } else {
@@ -998,7 +998,7 @@ class WindowsXP {
                 }
             } catch (error) {
                 console.error('登录失败:', error);
-                showMessage('登录失败，请重试', 'error');
+                                        showMessage('Login failed, please try again', 'error');
             } finally {
                 // 恢复按钮状态
                 loginButton.disabled = false;
@@ -1287,7 +1287,7 @@ class WindowsXP {
                 const snapshot = await userRef.where('username', '==', username).get();
                 
                 if (!snapshot.empty) {
-                    return { success: false, message: '用户名已存在' };
+                    return { success: false, message: 'Username already exists' };
                 }
                 
                 // 简单的密码哈希（实际项目中应使用更安全的方法）
@@ -1299,9 +1299,9 @@ class WindowsXP {
                     createdAt: new Date().toISOString()
                 });
                 
-                return { success: true, message: '注册成功！请登录' };
+                return { success: true, message: 'Registration successful! Please login' };
             } catch (error) {
-                return { success: false, message: '注册失败，请重试' };
+                return { success: false, message: 'Registration failed, please try again' };
             }
         }
 
@@ -1326,7 +1326,7 @@ class WindowsXP {
                 const hashedPassword = btoa(password);
                 
                 if (userData.password !== hashedPassword) {
-                    return { success: false, message: '密码错误' };
+                    return { success: false, message: 'Incorrect password' };
                 }
                 
                 // 更新在线状态
@@ -1337,11 +1337,11 @@ class WindowsXP {
                 
                 return { 
                     success: true, 
-                    message: '登录成功！',
+                    message: 'Login successful!',
                     username: username
                 };
             } catch (error) {
-                return { success: false, message: '登录失败，请重试' };
+                return { success: false, message: 'Login failed, please try again' };
             }
         }
 
@@ -1424,7 +1424,7 @@ class WindowsXP {
         function connectToServer(callback) {
             console.log('connectToServer被调用');
             
-            connectionStatus.innerHTML = '<i class="fas fa-circle" style="margin-right: 5px; color: #00cc00;"></i>已连接';
+                                    connectionStatus.innerHTML = '<i class="fas fa-circle" style="margin-right: 5px; color: #00cc00;"></i>Connected';
             connectionStatus.style.color = '#00cc00';
             connectionStatus.style.fontWeight = 'bold';
             sendButton.disabled = false;
@@ -1451,7 +1451,7 @@ class WindowsXP {
             
             // 更新连接状态
             if (connectionStatus) {
-                connectionStatus.innerHTML = '<i class="fas fa-circle" style="margin-right: 5px; color: #00ff00;"></i>已连接';
+                                        connectionStatus.innerHTML = '<i class="fas fa-circle" style="margin-right: 5px; color: #00ff00;"></i>Connected';
                 connectionStatus.style.color = '#00ff00';
             }
             
@@ -1769,7 +1769,7 @@ class WindowsXP {
         const desktop = document.getElementById('desktop');
         
         // Set wallpaper (now all wallpapers are image files)
-        desktop.style.background = `url('${wallpaperFile}') center/cover`;
+            desktop.style.background = `url('${wallpaperFile}') center/cover`;
         
         // Save wallpaper settings to local storage
         localStorage.setItem('wallpaper', wallpaperFile);
