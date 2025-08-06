@@ -137,6 +137,9 @@ class WindowsXP {
             case 'games':
                 this.launchApp('games');
                 break;
+            case 'xp-tv':
+                this.launchApp('xp-tv');
+                break;
         }
     }
 
@@ -227,6 +230,14 @@ class WindowsXP {
                     content: this.createGamesContent(),
                     width: 400,
                     height: 300
+                };
+                break;
+            case 'xp-tv':
+                windowConfig = {
+                    title: 'XP TV',
+                    content: this.createXPTVContent(),
+                    width: 1024,
+                    height: 768
                 };
                 break;
         }
@@ -618,7 +629,67 @@ class WindowsXP {
     `;
 }
 
-
+    createXPTVContent() {
+        return `
+            <div style="width: 100%; height: 100%; padding: 0; margin: 0; position: relative;">
+                <!-- Loading Animation -->
+                <div id="xptv-loading" style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10;
+                    font-family: 'Tahoma', sans-serif;
+                ">
+                    <div style="
+                        width: 60px;
+                        height: 60px;
+                        border: 4px solid #e0e0e0;
+                        border-top: 4px solid #245edc;
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                        margin-bottom: 20px;
+                    "></div>
+                    <div style="
+                        color: #245edc;
+                        font-size: 14px;
+                        font-weight: bold;
+                        text-align: center;
+                    ">
+                        <div>Loading XP TV...</div>
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">Connecting to BonkTV</div>
+                    </div>
+                </div>
+                
+                <!-- Website iframe -->
+                <iframe id="xptv-iframe" 
+                        src="https://bonktv.net/" 
+                        style="width: 100%; height: 100%; border: none; background: white; opacity: 0; transition: opacity 0.5s ease;"
+                        allowfullscreen
+                        onload="document.getElementById('xptv-loading').style.display='none'; document.getElementById('xptv-iframe').style.opacity='1';">
+                </iframe>
+                
+                <!-- Click Restriction Overlay - Blocks the top navigation bar area -->
+                <div id="xptv-overlay" style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 80px;
+                    background: transparent;
+                    z-index: 5;
+                    pointer-events: auto;
+                    cursor: not-allowed;
+                " title="Navigation area is disabled"></div>
+            </div>
+        `;
+    }
 
         createFullChatRoomContent() {
     return `
