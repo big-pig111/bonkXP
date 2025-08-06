@@ -1,0 +1,2208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer Meme Snake Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions-compat.js"></script>
+    
+    <!-- Configure Tailwind custom colors and fonts -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        memeYellow: '#FFE100',
+                        memeBlue: '#0066FF',
+                        memeRed: '#FF3333',
+                        memeGreen: '#33CC33',
+                        memePink: '#FF66CC',
+                    },
+                    fontFamily: {
+                        meme: ['"Comic Sans MS"', '"Comic Neue"', 'cursive'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+            }
+            .glow {
+                filter: drop-shadow(0 0 8px currentColor);
+            }
+            .rotate-random {
+                transform: rotate(var(--rotation, -5deg));
+            }
+            .bounce-meme {
+                animation: bounceMeme 0.5s ease-in-out infinite alternate;
+            }
+            @keyframes bounceMeme {
+                from { transform: translateY(0); }
+                to { transform: translateY(-10px); }
+            }
+            .wiggle {
+                animation: wiggle 1s ease-in-out infinite;
+            }
+            @keyframes wiggle {
+                0%, 100% { transform: rotate(-3deg); }
+                50% { transform: rotate(3deg); }
+            }
+            
+            .meme-pulse {
+                animation: memePulse 2s ease-in-out infinite;
+            }
+            @keyframes memePulse {
+                0%, 100% { transform: scale(1); filter: hue-rotate(0deg); }
+                50% { transform: scale(1.05); filter: hue-rotate(180deg); }
+            }
+            
+            .rainbow-text {
+                animation: rainbow 3s linear infinite;
+            }
+            @keyframes rainbow {
+                0% { color: #ff0000; }
+                16.66% { color: #ff8000; }
+                33.33% { color: #ffff00; }
+                50% { color: #00ff00; }
+                66.66% { color: #0080ff; }
+                83.33% { color: #8000ff; }
+                100% { color: #ff0000; }
+            }
+            
+            .corpse-glow {
+                animation: corpseGlow 1.5s ease-in-out infinite alternate;
+            }
+            @keyframes corpseGlow {
+                from { filter: drop-shadow(0 0 5px currentColor); }
+                to { filter: drop-shadow(0 0 20px currentColor); }
+            }
+            
+            /* Snake body connection effects */
+            .snake-segment {
+                border-radius: 4px;
+                transition: all 0.1s ease;
+            }
+            
+            .snake-corner {
+                border-radius: 8px;
+                position: relative;
+            }
+            
+            .snake-corner::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                border-radius: 8px;
+                background: inherit;
+                z-index: -1;
+                filter: blur(2px);
+            }
+
+        }
+    </style>
+</head>
+<body class="bg-gray-900 font-meme min-h-screen flex flex-col items-center justify-center p-4 text-white overflow-x-hidden">
+    <!-- Page Title -->
+    <header class="text-center mb-6 relative">
+        <h1 class="text-[clamp(2rem,5vw,4rem)] font-bold text-memeYellow glow mb-2 transform -rotate-2">
+            <i class="fa fa-users mr-2"></i> Multiplayer MEME Snake <i class="fa fa-users ml-2"></i>
+        </h1>
+        <p class="text-memePink text-[clamp(1rem,2vw,1.5rem)] wiggle">
+            Eat together, grow together with friends!
+        </p>
+    </header>
+
+         <!-- Game Container -->
+             <main class="relative w-full max-w-7xl">
+        <!-- Player Info and Score Panel -->
+        <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+            <div class="bg-gray-800 p-3 rounded-lg border-2 border-memeYellow flex-1 min-w-[200px]">
+                <div class="flex items-center">
+                    <i class="fa fa-user text-memeBlue mr-2"></i>
+                    <span class="text-xl">Player: <span id="playerName" class="text-memeGreen font-bold">Anonymous</span></span>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-3 rounded-lg border-2 border-memeYellow flex-1 min-w-[200px]">
+                <div class="flex items-center">
+                    <i class="fa fa-star text-memeYellow mr-2"></i>
+                    <span class="text-xl">Score: <span id="score" class="text-memeGreen font-bold">0</span></span>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-3 rounded-lg border-2 border-memeYellow flex-1 min-w-[200px]">
+                <div class="flex items-center">
+                    <i class="fa fa-users text-memePink mr-2"></i>
+                    <span class="text-xl">Online: <span id="playerCount" class="text-memeBlue font-bold">0</span></span>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-3 rounded-lg border-2 border-memeYellow flex-1 min-w-[200px]">
+                <div class="flex items-center">
+                    <i class="fa fa-gamepad text-memeRed mr-2"></i>
+                    <span class="text-xl">Room: <span id="roomName" class="text-memeBlue font-bold">Default Room</span></span>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-3 rounded-lg border-2 border-memeYellow flex-1 min-w-[200px]">
+                <div class="flex items-center">
+                    <i class="fa fa-clock text-memePink mr-2"></i>
+                    <span class="text-xl" id="countdown">Next Reset: --:--</span>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-3 rounded-lg border-2 border-memeGreen flex-1 min-w-[200px]">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fa fa-gift text-memeGreen mr-2"></i>
+                        <span class="text-xl">My Points</span>
+                    </div>
+                    <button id="claimRewardBtn" class="bg-memeGreen hover:bg-memeGreen/80 text-black px-3 py-1 rounded text-sm font-bold">
+                        Claim Rewards
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Canvas Container -->
+        <div class="relative border-4 border-memePink rounded-lg overflow-hidden bg-gray-800 shadow-lg">
+            <canvas id="gameCanvas" class="w-full h-auto bg-gray-900"></canvas>
+            
+            <!-- Start Screen -->
+            <div id="startScreen" class="absolute inset-0 bg-gray-900/90 flex flex-col items-center justify-center z-10">
+                <h2 class="text-4xl font-bold text-memeYellow mb-6 bounce-meme">Ready to play with friends?</h2>
+                <div class="mb-4 w-full max-w-xs">
+                    <label for="playerNameInput" class="block text-left mb-2 text-memeGreen">Your Wallet Address</label>
+                    <input type="text" id="playerNameInput" 
+                           class="w-full bg-gray-700 border border-memeBlue rounded p-2 text-white font-meme"
+                           placeholder="Enter your Solana wallet address">
+                </div>
+                <div class="mb-4 w-full max-w-xs">
+                    <label for="roomSelect" class="block text-left mb-2 text-memeBlue">Select Room</label>
+                    <select id="roomSelect" class="w-full bg-gray-700 border border-memeBlue rounded p-2 text-white font-meme">
+                        <option value="default">Default Room</option>
+                        <option value="room1">Room 1 - Beginner</option>
+                        <option value="room2">Room 2 - Advanced</option>
+                        <option value="room3">Room 3 - Casual</option>
+                    </select>
+                </div>
+                <div class="mb-6 w-full max-w-xs">
+                    <label class="block text-left mb-2 text-memePink">Choose Color</label>
+                    <div class="flex gap-2 flex-wrap">
+                        <button class="color-btn w-8 h-8 rounded-full bg-memeRed border-2 border-white" data-color="#FF3333"></button>
+                        <button class="color-btn w-8 h-8 rounded-full bg-memeBlue border-2" data-color="#0066FF"></button>
+                        <button class="color-btn w-8 h-8 rounded-full bg-memeGreen border-2" data-color="#33CC33"></button>
+                        <button class="color-btn w-8 h-8 rounded-full bg-memeYellow border-2" data-color="#FFE100"></button>
+                        <button class="color-btn w-8 h-8 rounded-full bg-memePink border-2" data-color="#FF66CC"></button>
+                        <button class="color-btn w-8 h-8 rounded-full bg-orange-500 border-2" data-color="#FF9900"></button>
+                        <button class="color-btn w-8 h-8 rounded-full bg-purple-500 border-2" data-color="#9966FF"></button>
+                        <button class="color-btn w-8 h-8 rounded-full bg-cyan-500 border-2" data-color="#66CCFF"></button>
+                    </div>
+                </div>
+                <button id="startBtn" class="bg-memeRed hover:bg-memeRed/80 text-white text-2xl py-3 px-8 rounded-full transform transition-transform hover:scale-110 active:scale-95 font-bold shadow-lg">
+                    Join Game <i class="fa fa-play ml-2"></i>
+                </button>
+            </div>
+            
+            <!-- Game Over Screen -->
+            <div id="gameOverScreen" class="absolute inset-0 bg-gray-900/95 flex flex-col items-center justify-center z-10 hidden">
+                <h2 class="text-5xl font-bold text-memeRed mb-4 wiggle">Game Over!</h2>
+                <p class="text-2xl mb-2">Your Score: <span id="finalScore" class="text-memeGreen font-bold">0</span></p>
+                <p class="text-xl mb-4">Leaderboard:</p>
+                <ul id="leaderboard" class="mb-8 bg-gray-800 p-4 rounded-lg w-64">
+                    <!-- Leaderboard will be generated here -->
+                </ul>
+                <button id="restartBtn" class="bg-memeGreen hover:bg-memeGreen/80 text-white text-2xl py-3 px-8 rounded-full transform transition-transform hover:scale-110 active:scale-95 font-bold shadow-lg">
+                    Play Again <i class="fa fa-refresh ml-2"></i>
+                </button>
+            </div>
+            
+            <!-- Pause Button -->
+            <button id="pauseBtn" class="absolute top-4 right-4 bg-gray-800/70 hover:bg-gray-700 text-white p-2 rounded-full z-5 hidden">
+                <i class="fa fa-pause text-xl"></i>
+            </button>
+            
+            <!-- Room Switch Button -->
+            <button id="roomSwitchBtn" class="absolute top-4 left-4 bg-gray-800/70 hover:bg-gray-700 text-white p-2 rounded-full z-5 hidden">
+                <i class="fa fa-exchange text-xl"></i>
+            </button>
+            
+            <!-- Claim Rewards Modal -->
+            <div id="claimRewardModal" class="absolute inset-0 bg-gray-900/95 flex items-center justify-center z-20 hidden">
+                <div class="bg-gray-800 p-6 rounded-lg border-2 border-memeGreen max-w-md w-full mx-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold text-memeGreen">Claim Rewards</h3>
+                        <button id="closeClaimModal" class="text-gray-400 hover:text-white text-xl">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="walletAddressInput" class="block text-left mb-2 text-memeBlue">Wallet Address</label>
+                        <input type="text" id="walletAddressInput" 
+                               class="w-full bg-gray-700 border border-memeBlue rounded p-2 text-white font-meme"
+                               placeholder="Enter your Solana wallet address">
+                    </div>
+                    
+                    <div class="mb-4 p-3 bg-gray-700 rounded">
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-memeYellow" id="totalScore">0</div>
+                            <div class="text-sm text-gray-400">Total Points</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4 p-3 bg-gray-700 rounded">
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-memeGreen" id="tokenAmount">0</div>
+                            <div class="text-sm text-gray-400">Tokens Available</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button id="checkScoreBtn" class="flex-1 bg-memeBlue hover:bg-memeBlue/80 text-white py-2 px-4 rounded font-bold">
+                            Check Points
+                        </button>
+                        <button id="claimTokenBtn" class="flex-1 bg-memeGreen hover:bg-memeGreen/80 text-black py-2 px-4 rounded font-bold">
+                            Claim Tokens
+                        </button>
+                    </div>
+                    
+                    <div id="claimResult" class="mt-4 p-3 rounded hidden">
+                        <!-- Result display area -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Controls and Player List -->
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-gray-800 p-4 rounded-lg border border-memeBlue">
+                <h3 class="text-memeBlue text-xl font-bold mb-2">Game Instructions</h3>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Eat food to make the snake longer</li>
+                    <li>Hitting walls, yourself, or other players will cause death</li>
+                    <li>Higher scores mean faster speed</li>
+                    <li>Special foods have surprises!</li>
+                    <li>Press Space to pause/continue</li>
+                </ul>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-memeGreen">
+                <h3 class="text-memeGreen text-xl font-bold mb-2">Current Players</h3>
+                <ul id="playersList" class="space-y-2 max-h-32 overflow-y-auto">
+                    <!-- Player list will be generated here -->
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Room Statistics -->
+        <div class="mt-4 bg-gray-800 p-4 rounded-lg border border-memeYellow">
+            <h3 class="text-memeYellow text-xl font-bold mb-2">Room Statistics</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-memeGreen" id="totalPlayers">0</div>
+                    <div class="text-sm text-gray-400">Total Players</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-memeBlue" id="activePlayers">0</div>
+                    <div class="text-sm text-gray-400">Active Players</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-memeRed" id="roomHighScore">0</div>
+                    <div class="text-sm text-gray-400">Room High Score</div>
+                </div>
+            </div>
+        </div>
+        
+
+    </main>
+    
+    <!-- Footer -->
+    <footer class="mt-8 text-center text-gray-500 text-sm">
+        <p>© 2023 Multiplayer Meme Snake | Real-time sync with Firebase <i class="fa fa-bolt text-memeYellow"></i></p>
+    </footer>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA5Z5ieEbAcfQX0kxGSn9ldGXhzvAwx_8M",
+            authDomain: "chat-294cc.firebaseapp.com",
+            databaseURL: "https://chat-294cc-default-rtdb.firebaseio.com",
+            projectId: "chat-294cc",
+            storageBucket: "chat-294cc.firebasestorage.app",
+            messagingSenderId: "913615304269",
+            appId: "1:913615304269:web:0274ffaccb8e6b678e4e04",
+            measurementId: "G-SJR9NDW86B"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const functions = firebase.functions();
+        
+        // Game Constants and Variables
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const playerCountElement = document.getElementById('playerCount');
+        const playerNameElement = document.getElementById('playerName');
+        const finalScoreElement = document.getElementById('finalScore');
+        const leaderboardElement = document.getElementById('leaderboard');
+        const playersListElement = document.getElementById('playersList');
+        const roomNameElement = document.getElementById('roomName');
+        const totalPlayersElement = document.getElementById('totalPlayers');
+        const activePlayersElement = document.getElementById('activePlayers');
+        const roomHighScoreElement = document.getElementById('roomHighScore');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const roomSwitchBtn = document.getElementById('roomSwitchBtn');
+        const playerNameInput = document.getElementById('playerNameInput');
+        const roomSelect = document.getElementById('roomSelect');
+        
+                // Game State Variables
+        let playerId = null;
+        let playerWallet = ''; // Player wallet address
+        let playerName = 'Anonymous';
+        let snake = [];
+        let otherPlayers = {};
+        let foods = []; // Changed to array to store multiple foods
+        let specialFood = null;
+        let corpseFoods = []; // Dead player's snake body becomes food
+        let direction = '';
+        let nextDirection = '';
+        let score = 0;
+        let level = 1;
+        let gameSpeed = 100; // milliseconds, slightly faster to adapt to larger game area
+        let gameLoop;
+        let isGameRunning = false;
+        let isPaused = false;
+        let gameRoom = 'default'; // Game room
+        let playerColor = '';
+        let playerAvatar = '';
+        let gameMargin = 0; // Game margin (border)
+        const MAX_FOODS = 5; // Maximum number of foods on field
+        
+        // Firebase Functions Reference
+        const claimTokenFunction = firebase.functions().httpsCallable('claimToken');
+        
+        // Image Resources
+        let snakeHeadImage = null;
+        let snakeBodyImage = null;
+        let snakeTailImage = null;
+        let foodImage = null;
+        let corpseImage = null;
+        let imagesLoaded = 0;
+        const totalImages = 5;
+        
+        // Meme elements
+        const memeFaces = ['(◍•ᴗ•◍)', '(¬‿¬)', '(ʘ‿ʘ)', '(◔_◔)', '(°ロ°)'];
+        const memeColors = [
+            '#FFE100', '#0066FF', '#FF3333', '#33CC33', '#FF66CC',
+            '#FF9900', '#9966FF', '#66CCFF', '#FF6666', '#99FF66'
+        ];
+        
+                         // Set Canvas Size
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            // Use fixed canvas size to ensure all players see the same map
+            canvas.width = 1200; // Fixed width 1200px
+            canvas.height = 960; // Fixed height 960px, maintain 5:4 ratio
+            
+            // Calculate margin (border)
+            const margin = Math.floor(canvas.width * 0.05); // 5% margin
+            gameMargin = margin;
+        }
+        
+        // Load image resources
+        function loadImages() {
+            snakeHeadImage = new Image();
+            snakeBodyImage = new Image();
+            snakeTailImage = new Image();
+            foodImage = new Image();
+            corpseImage = new Image();
+            
+            snakeHeadImage.onload = function() {
+                imagesLoaded++;
+                if (imagesLoaded === totalImages) {
+                    console.log('All images loaded');
+                }
+            };
+            
+            snakeBodyImage.onload = function() {
+                imagesLoaded++;
+                if (imagesLoaded === totalImages) {
+                    console.log('All images loaded');
+                }
+            };
+            
+            snakeTailImage.onload = function() {
+                imagesLoaded++;
+                if (imagesLoaded === totalImages) {
+                    console.log('All images loaded');
+                }
+            };
+            
+            foodImage.onload = function() {
+                imagesLoaded++;
+                if (imagesLoaded === totalImages) {
+                    console.log('All images loaded');
+                }
+            };
+            
+            corpseImage.onload = function() {
+                imagesLoaded++;
+                if (imagesLoaded === totalImages) {
+                    console.log('All images loaded');
+                }
+            };
+            
+            snakeHeadImage.src = 'png/snake1.png';
+            snakeBodyImage.src = 'png/snake.png';
+            snakeTailImage.src = 'png/snake4.png';
+            foodImage.src = 'png/snake2.png';
+            corpseImage.src = 'png/snake3.png';
+        }
+        
+        // Initialize canvas size and listen for window resize
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Load images
+        loadImages();
+        
+        // Generate unique player ID
+        function generatePlayerId() {
+            return 'player_' + Math.random().toString(36).substring(2, 10);
+        }
+        
+        // Initialize Game
+        function initGame() {
+            // Get player wallet address and room
+            if (playerNameInput.value.trim()) {
+                playerWallet = playerNameInput.value.trim();
+                playerName = playerWallet.substring(0, 8) + '...' + playerWallet.substring(playerWallet.length - 4);
+            } else {
+                alert('Please enter a valid wallet address!');
+                return;
+            }
+            
+            // Validate wallet address format (simple Solana address validation)
+            if (!playerWallet.match(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/)) {
+                alert('Please enter a valid Solana wallet address!');
+                return;
+            }
+            
+            // Use wallet address as player ID
+            playerId = playerWallet;
+            gameRoom = roomSelect.value;
+            playerNameElement.textContent = playerName;
+            
+            // Update room name display
+            const roomNames = {
+                'default': 'Default Room',
+                'room1': 'Room 1 - Beginner',
+                'room2': 'Room 2 - Advanced',
+                'room3': 'Room 3 - Casual'
+            };
+            roomNameElement.textContent = roomNames[gameRoom] || 'Default Room';
+            
+                                     // Set initial snake position
+            const gridSize = 15; // Fixed grid size
+            
+            // Calculate effective game area using fixed canvas size
+            const canvasWidth = 1200;
+            const canvasHeight = 960;
+            const margin = Math.floor(canvasWidth * 0.05); // 60px margin
+            const effectiveWidth = canvasWidth - 2 * margin;
+            const effectiveHeight = canvasHeight - 2 * margin;
+            const gridCols = Math.floor(effectiveWidth / gridSize);
+            const gridRows = Math.floor(effectiveHeight / gridSize);
+            
+            // Define spawn points (using grid coordinates, within effective area)
+            const spawnPoints = [
+                {gridX: 5, gridY: 5},
+                {gridX: gridCols - 5, gridY: 5},
+                {gridX: 5, gridY: gridRows - 5},
+                {gridX: gridCols - 5, gridY: gridRows - 5}
+            ];
+            const spawnPoint = spawnPoints[Math.floor(Math.random() * spawnPoints.length)];
+            
+            // Convert to pixel coordinates (add margin offset)
+            const pixelX = margin + spawnPoint.gridX * gridSize;
+            const pixelY = margin + spawnPoint.gridY * gridSize;
+            
+                                     snake = [
+                { x: pixelX, y: pixelY },
+                { x: pixelX - gridSize, y: pixelY },
+                { x: pixelX - gridSize * 2, y: pixelY },
+                { x: pixelX - gridSize * 3, y: pixelY }
+            ];
+            
+            // Initial direction
+            direction = 'right';
+            nextDirection = 'right';
+            
+                         // Reset score and level
+             score = 0;
+             level = 1;
+             gameSpeed = 100; // Slightly increase speed to adapt to larger game area
+            
+            // 更新UI
+            updateScore();
+            
+            // 保存玩家信息到Firebase
+            savePlayerInfo();
+            
+            // 监听其他玩家和食物
+            listenForGameUpdates();
+            
+            // 初始化排行榜显示
+            database.ref(`rooms/${gameRoom}/leaderboard`).once('value', (snapshot) => {
+                const leaderboard = snapshot.val() || [];
+                updateLeaderboardDisplay(leaderboard);
+            });
+            
+            // 初始生成食物（如果不存在）
+            database.ref(`rooms/${gameRoom}/foods`).once('value', (snapshot) => {
+                if (!snapshot.exists() || !snapshot.val() || snapshot.val().length === 0) {
+                    generateInitialFoods();
+                }
+            });
+            
+            // 绘制初始状态
+            draw();
+        }
+        
+        // 保存玩家信息到Firebase
+        function savePlayerInfo() {
+            const playerRef = database.ref(`rooms/${gameRoom}/players/${playerId}`);
+            
+            // 设置玩家初始信息
+            playerRef.set({
+                name: playerName,
+                wallet: playerWallet,
+                snake: snake,
+                direction: direction,
+                score: score,
+                alive: true,
+                color: playerColor || memeColors[Math.floor(Math.random() * memeColors.length)],
+                room: gameRoom,
+                lastActive: Date.now()
+            });
+            
+            // 当页面关闭时移除玩家
+            window.addEventListener('beforeunload', () => {
+                playerRef.remove();
+            });
+            
+            // 定期更新最后活动时间
+            setInterval(() => {
+                if (isGameRunning && !isPaused) {
+                    playerRef.update({
+                        lastActive: Date.now()
+                    });
+                }
+            }, 5000);
+        }
+        
+        // 监听游戏更新
+        function listenForGameUpdates() {
+            // 监听游戏状态
+            database.ref('gameState').on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const gameState = snapshot.val();
+                    handleGameStateChange(gameState);
+                }
+            });
+            
+            // 监听其他玩家
+            database.ref(`rooms/${gameRoom}/players`).on('value', (snapshot) => {
+                const players = snapshot.val() || {};
+                otherPlayers = {};
+                
+                // 更新玩家列表
+                playersListElement.innerHTML = '';
+                playerCountElement.textContent = Object.keys(players).length;
+                
+                let activeCount = 0;
+                Object.keys(players).forEach(id => {
+                    if (id !== playerId && players[id].alive) {
+                        otherPlayers[id] = players[id];
+                        activeCount++;
+                    }
+                    
+                    // 添加到玩家列表
+                    const li = document.createElement('li');
+                    li.className = id === playerId ? 'text-memeGreen font-bold' : '';
+                    li.innerHTML = `<span style="color: ${players[id].color}">●</span> ${players[id].name} (${players[id].score})`;
+                    playersListElement.appendChild(li);
+                });
+                
+                // 更新统计信息
+                totalPlayersElement.textContent = Object.keys(players).length;
+                activePlayersElement.textContent = activeCount + (isGameRunning ? 1 : 0);
+            });
+            
+            // 监听食物
+            database.ref(`rooms/${gameRoom}/foods`).on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    foods = snapshot.val() || [];
+                } else {
+                    foods = [];
+                }
+            });
+            
+            // 监听特殊食物
+            database.ref(`rooms/${gameRoom}/specialFood`).on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    specialFood = snapshot.val();
+                } else {
+                    specialFood = null;
+                }
+            });
+            
+            // 监听尸体食物
+            database.ref(`rooms/${gameRoom}/corpseFoods`).on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    corpseFoods = snapshot.val() || [];
+                } else {
+                    corpseFoods = [];
+                }
+            });
+            
+            // 监听房间排行榜
+            database.ref(`rooms/${gameRoom}/leaderboard`).on('value', (snapshot) => {
+                const leaderboard = snapshot.val() || [];
+                let maxScore = 0;
+                
+                if (leaderboard.length > 0) {
+                    maxScore = leaderboard[0].score || 0;
+                }
+                
+                roomHighScoreElement.textContent = maxScore;
+                
+                // 更新排行榜显示
+                updateLeaderboardDisplay(leaderboard);
+            });
+        }
+        
+        // 处理游戏状态变化
+        function handleGameStateChange(gameState) {
+            if (!gameState.isRunning && isGameRunning) {
+                // 游戏被暂停
+                pauseGame();
+                showGamePausedMessage();
+            } else if (gameState.isRunning && !isGameRunning) {
+                // 游戏恢复
+                resumeGame();
+                hideGamePausedMessage();
+            }
+            
+            // 更新倒计时显示
+            updateCountdown(gameState.nextReset);
+        }
+        
+        // 显示游戏暂停消息
+        function showGamePausedMessage() {
+            const message = document.createElement('div');
+            message.id = 'gamePausedMessage';
+            message.className = 'absolute inset-0 bg-gray-900/90 flex items-center justify-center z-20';
+            message.innerHTML = `
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold text-yellow-400 mb-4">Game Paused</h2>
+                    <p class="text-xl text-white">Waiting for admin to resume game...</p>
+                </div>
+            `;
+            canvas.parentElement.appendChild(message);
+        }
+        
+        // 隐藏游戏暂停消息
+        function hideGamePausedMessage() {
+            const message = document.getElementById('gamePausedMessage');
+            if (message) {
+                message.remove();
+            }
+        }
+        
+        // 更新倒计时显示
+        function updateCountdown(nextReset) {
+            if (!nextReset) return;
+            
+            const timeLeft = Math.max(0, nextReset - Date.now());
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+            
+            // 更新倒计时显示
+            const countdownEl = document.getElementById('countdown');
+            if (countdownEl) {
+                countdownEl.textContent = `Next Reset: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                // 当时间少于5分钟时显示警告
+                if (timeLeft < 300000) {
+                    countdownEl.className = 'text-red-400 font-bold';
+                } else if (timeLeft < 600000) {
+                    countdownEl.className = 'text-yellow-400 font-bold';
+                } else {
+                    countdownEl.className = 'text-white';
+                }
+            }
+            
+            // 检查是否需要重置排行榜（当倒计时结束时）
+            if (timeLeft <= 0) {
+                // 可以在这里添加排行榜重置逻辑
+                // 目前排行榜会持续保存，除非管理员手动重置
+            }
+        }
+        
+        // 暂停游戏
+        function pauseGame() {
+            isGameRunning = false;
+            if (gameLoop) {
+                clearInterval(gameLoop);
+                gameLoop = null;
+            }
+        }
+        
+        // 恢复游戏
+        function resumeGame() {
+            if (!isGameRunning) {
+                isGameRunning = true;
+                startGameLoop();
+            }
+        }
+        
+        // 启动游戏循环
+        function startGameLoop() {
+            if (gameLoop) {
+                clearInterval(gameLoop);
+            }
+            gameLoop = setInterval(gameUpdate, gameSpeed);
+        }
+        
+        // 更新排行榜显示
+        function updateLeaderboardDisplay(leaderboard) {
+            leaderboardElement.innerHTML = '';
+            
+            leaderboard.forEach((entry, index) => {
+                const li = document.createElement('li');
+                li.className = index === 0 ? 'text-memeYellow font-bold' : 
+                              index === 1 ? 'text-gray-300' : 
+                              index === 2 ? 'text-amber-700' : '';
+                
+                // 格式化时间
+                const date = new Date(entry.timestamp);
+                const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+                
+                li.innerHTML = `${index + 1}. ${entry.playerName} - ${entry.score} pts <span class="text-xs text-gray-500">(${timeStr})</span>`;
+                leaderboardElement.appendChild(li);
+            });
+        }
+        
+        // 更新当前玩家排行榜（用于实时显示）
+        function updateLeaderboard(players) {
+            // 这个函数现在主要用于实时显示当前在线玩家的分数
+            // 不再用于持久化排行榜
+        }
+        
+
+        
+        // 生成初始食物（生成多个食物）
+        function generateInitialFoods() {
+            const gridSize = 15; // 固定网格大小
+            const foodsToGenerate = Math.min(MAX_FOODS, 3); // 初始生成3个食物
+            
+            database.ref(`rooms/${gameRoom}/players`).once('value', (snapshot) => {
+                const players = snapshot.val() || {};
+                const newFoods = [];
+                
+                for (let i = 0; i < foodsToGenerate; i++) {
+                    const newFood = generateSingleFood(players, newFoods);
+                    if (newFood) {
+                        newFoods.push(newFood);
+                    }
+                }
+                
+                // 保存所有食物到Firebase
+                database.ref(`rooms/${gameRoom}/foods`).set(newFoods);
+            });
+        }
+        
+        // 生成单个食物
+        function generateSingleFood(players, existingFoods = []) {
+            // 使用固定的网格尺寸，确保所有玩家看到相同的地图
+            const gridSize = 15; // 固定网格大小
+            let attempts = 0;
+            const maxAttempts = 100;
+            
+            while (attempts < maxAttempts) {
+                attempts++;
+                // 使用固定的画布尺寸计算有效游戏区域
+                const canvasWidth = 1200;
+                const canvasHeight = 960;
+                const margin = Math.floor(canvasWidth * 0.05); // 60px边距
+                const effectiveWidth = canvasWidth - 2 * margin;
+                const effectiveHeight = canvasHeight - 2 * margin;
+                const gridCols = Math.floor(effectiveWidth / gridSize);
+                const gridRows = Math.floor(effectiveHeight / gridSize);
+                
+                // 生成随机网格坐标（在有效区域内）
+                const gridX = Math.floor(Math.random() * gridCols);
+                const gridY = Math.floor(Math.random() * gridRows);
+                
+                // 转换为像素坐标（加上边距偏移）
+                const pixelX = margin + gridX * gridSize;
+                const pixelY = margin + gridY * gridSize;
+                
+                const newFood = {
+                    x: pixelX,
+                    y: pixelY,
+                    color: memeColors[Math.floor(Math.random() * memeColors.length)],
+                    meme: memeFaces[Math.floor(Math.random() * memeFaces.length)],
+                    timestamp: Date.now(),
+                    id: 'food_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9)
+                };
+                
+                let validPosition = true;
+                
+                // 检查是否与当前玩家蛇身重叠
+                for (let segment of snake) {
+                    if (segment.x === newFood.x && segment.y === newFood.y) {
+                        validPosition = false;
+                        break;
+                    }
+                }
+                
+                if (!validPosition) continue;
+                
+                // 检查是否与其他玩家蛇身重叠
+                Object.values(players).forEach(player => {
+                    if (player.snake && player.alive) {
+                        for (let segment of player.snake) {
+                            if (segment.x === newFood.x && segment.y === newFood.y) {
+                                validPosition = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!validPosition) return;
+                });
+                
+                // 检查是否与现有食物重叠
+                existingFoods.forEach(food => {
+                    if (food.x === newFood.x && food.y === newFood.y) {
+                        validPosition = false;
+                    }
+                });
+                
+                // 检查是否与尸体食物重叠
+                if (corpseFoods && corpseFoods.length > 0) {
+                    corpseFoods.forEach(corpseFood => {
+                        if (corpseFood.x === newFood.x && corpseFood.y === newFood.y) {
+                            validPosition = false;
+                        }
+                    });
+                }
+                
+                if (validPosition) {
+                    return newFood;
+                }
+            }
+            
+            // 如果找不到有效位置，返回null
+            return null;
+        }
+        
+        // 生成普通食物（当食物被吃掉时调用）
+        function generateFood() {
+            const gridSize = 15; // 固定网格大小
+            
+            // 确保食物不会出现在任何蛇身上
+            database.ref(`rooms/${gameRoom}/players`).once('value', (snapshot) => {
+                const players = snapshot.val() || {};
+                
+                // 获取当前食物列表
+                database.ref(`rooms/${gameRoom}/foods`).once('value', (foodsSnapshot) => {
+                    const currentFoods = foodsSnapshot.val() || [];
+                    
+                    // 如果当前食物数量少于最大数量，生成新食物
+                    if (currentFoods.length < MAX_FOODS) {
+                        const newFood = generateSingleFood(players, currentFoods);
+                        if (newFood) {
+                            currentFoods.push(newFood);
+                            database.ref(`rooms/${gameRoom}/foods`).set(currentFoods);
+                        }
+                    }
+                });
+            });
+        }
+        
+                         // 生成特殊食物
+        function generateSpecialFood() {
+            // 使用固定的网格尺寸，确保所有玩家看到相同的地图
+            const gridSize = 15; // 固定网格大小
+            let newFood;
+            
+            // 确保特殊食物不会出现在任何蛇身上或普通食物位置
+            database.ref(`rooms/${gameRoom}/players`).once('value', (playersSnapshot) => {
+                database.ref(`rooms/${gameRoom}/foods`).once('value', (foodsSnapshot) => {
+                    const players = playersSnapshot.val() || {};
+                    const currentFoods = foodsSnapshot.val() || [];
+                    let validPosition = false;
+                    
+                    while (!validPosition) {
+                        // 使用固定的画布尺寸计算有效游戏区域
+                        const canvasWidth = 1200;
+                        const canvasHeight = 960;
+                        const margin = Math.floor(canvasWidth * 0.05); // 60px边距
+                        const effectiveWidth = canvasWidth - 2 * margin;
+                        const effectiveHeight = canvasHeight - 2 * margin;
+                        const gridCols = Math.floor(effectiveWidth / gridSize);
+                        const gridRows = Math.floor(effectiveHeight / gridSize);
+                        
+                        // 生成随机网格坐标（在有效区域内）
+                        const gridX = Math.floor(Math.random() * gridCols);
+                        const gridY = Math.floor(Math.random() * gridRows);
+                        
+                        // 转换为像素坐标（加上边距偏移）
+                        const pixelX = margin + gridX * gridSize;
+                        const pixelY = margin + gridY * gridSize;
+                        
+                        newFood = {
+                            x: pixelX,
+                            y: pixelY,
+                            color: '#FFFFFF',
+                            meme: '✨',
+                            timestamp: Date.now(),
+                            timer: 50 // 存在50个游戏帧
+                        };
+                        
+                        validPosition = true;
+                        
+                        // 检查是否与普通食物重叠
+                        currentFoods.forEach(food => {
+                            if (food.x === newFood.x && food.y === newFood.y) {
+                                validPosition = false;
+                            }
+                        });
+                        
+                        if (!validPosition) continue;
+                        
+                        // 检查是否与尸体食物重叠
+                        if (corpseFoods && corpseFoods.length > 0) {
+                            corpseFoods.forEach(corpseFood => {
+                                if (corpseFood.x === newFood.x && corpseFood.y === newFood.y) {
+                                    validPosition = false;
+                                }
+                            });
+                        }
+                        
+                        if (!validPosition) continue;
+                        
+                        // 检查是否与当前玩家蛇身重叠
+                        for (let segment of snake) {
+                            if (segment.x === newFood.x && segment.y === newFood.y) {
+                                validPosition = false;
+                                break;
+                            }
+                        }
+                        
+                        if (!validPosition) continue;
+                        
+                        // 检查是否与其他玩家蛇身重叠
+                        Object.values(players).forEach(player => {
+                            if (player.snake && player.alive) {
+                                for (let segment of player.snake) {
+                                    if (segment.x === newFood.x && segment.y === newFood.y) {
+                                        validPosition = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!validPosition) return;
+                        });
+                    }
+                    
+                    // 保存特殊食物到Firebase
+                    database.ref(`rooms/${gameRoom}/specialFood`).set(newFood);
+                    
+                    // 5秒后移除特殊食物
+                    setTimeout(() => {
+                        database.ref(`rooms/${gameRoom}/specialFood`).once('value', (snapshot) => {
+                            if (snapshot.exists() && snapshot.val().timestamp === newFood.timestamp) {
+                                database.ref(`rooms/${gameRoom}/specialFood`).remove();
+                            }
+                        });
+                    }, 5000);
+                });
+            });
+        }
+        
+        // 更新分数
+        function updateScore() {
+            scoreElement.textContent = score;
+            finalScoreElement.textContent = score;
+            
+            // 更新Firebase中的分数
+            if (playerId) {
+                database.ref(`rooms/${gameRoom}/players/${playerId}`).update({
+                    score: score
+                });
+                
+                // 同时更新用户钱包下的总积分
+                database.ref(`users/${playerWallet}`).update({
+                    score: score,
+                    lastUpdated: Date.now()
+                });
+            }
+        }
+        
+                         // 检查碰撞
+        function checkCollision() {
+            const head = snake[0];
+            const gridSize = 15; // 固定网格大小
+            
+            // 检查墙壁碰撞（考虑边距）
+            if (head.x < gameMargin || head.x >= canvas.width - gameMargin || 
+                head.y < gameMargin || head.y >= canvas.height - gameMargin) {
+                return true;
+            }
+            
+            // 检查自身碰撞
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    return true;
+                }
+            }
+            
+            // 检查与其他玩家碰撞（包括死亡玩家的蛇身体）
+            Object.values(otherPlayers).forEach(player => {
+                if (player.snake) {
+                    for (let segment of player.snake) {
+                        if (head.x === segment.x && head.y === segment.y) {
+                            return true;
+                        }
+                    }
+                }
+            });
+            
+            return false;
+        }
+        
+        // 检查食物碰撞
+        function checkFoodCollision() {
+            const head = snake[0];
+            const gridSize = 15; // 固定网格大小
+            let ateFood = false;
+            
+            // 检查普通食物碰撞
+            if (foods && foods.length > 0) {
+                for (let i = 0; i < foods.length; i++) {
+                    const food = foods[i];
+                    
+                    // 调试信息：显示蛇头和食物的坐标
+                    console.log('碰撞检测:', {
+                        head: {x: head.x, y: head.y},
+                        food: {x: food.x, y: food.y},
+                        gridSize: gridSize,
+                        distance: Math.sqrt(Math.pow(head.x - food.x, 2) + Math.pow(head.y - food.y, 2))
+                    });
+                    
+                    // 使用更宽松的碰撞检测
+                    if (Math.abs(head.x - food.x) < gridSize/2 && Math.abs(head.y - food.y) < gridSize/2) {
+                        console.log('吃到普通食物!', {head, food}); // 调试信息
+                        
+                        // 增加分数
+                        score += 10;
+                        
+                        // 每100分升级
+                        if (score % 100 === 0) {
+                            level++;
+                            // 加快游戏速度，最低50ms
+                            gameSpeed = Math.max(50, gameSpeed - 10);
+                            // 重新设置游戏循环速度
+                            if (isGameRunning && !isPaused) {
+                                clearInterval(gameLoop);
+                                gameLoop = setInterval(gameUpdate, gameSpeed);
+                            }
+                        }
+                        
+                        updateScore();
+                        
+                        // 移除被吃掉的食物
+                        const updatedFoods = foods.filter((_, index) => index !== i);
+                        database.ref(`rooms/${gameRoom}/foods`).set(updatedFoods);
+                        
+                        // 生成新食物
+                        generateFood();
+                        
+                        // 有10%的几率生成特殊食物
+                        if (Math.random() < 0.1) {
+                            generateSpecialFood();
+                        }
+                        
+                        ateFood = true;
+                        break; // 一次只能吃一个食物
+                    }
+                }
+            }
+            
+            // 检查尸体食物碰撞
+            if (corpseFoods && corpseFoods.length > 0) {
+                for (let i = 0; i < corpseFoods.length; i++) {
+                    const corpseFood = corpseFoods[i];
+                    
+                    // 使用更宽松的碰撞检测
+                    if (Math.abs(head.x - corpseFood.x) < gridSize/2 && Math.abs(head.y - corpseFood.y) < gridSize/2) {
+                        console.log('吃到尸体食物!', {head, corpseFood}); // 调试信息
+                        
+                        // 尸体食物只加分数，不增加蛇长度
+                        score += 5;
+                        updateScore();
+                        
+                        // 移除被吃掉的尸体食物
+                        const updatedCorpseFoods = corpseFoods.filter((_, index) => index !== i);
+                        database.ref(`rooms/${gameRoom}/corpseFoods`).set(updatedCorpseFoods);
+                        
+                        // 注意：不吃尸体食物，所以不设置ateFood = true
+                        break; // 一次只能吃一个食物
+                    }
+                }
+            }
+            
+            // 特殊食物 - 使用更宽松的碰撞检测
+            if (specialFood && Math.abs(head.x - specialFood.x) < gridSize/2 && Math.abs(head.y - specialFood.y) < gridSize/2) {
+                console.log('吃到特殊食物!', {head, specialFood}); // 调试信息
+                
+                // 特殊食物给更多分数
+                score += 50;
+                updateScore();
+                database.ref(`rooms/${gameRoom}/specialFood`).remove();
+                ateFood = true;
+            }
+            
+            return ateFood;
+        }
+        
+        // 更新游戏状态
+        function gameUpdate() {
+            if (isPaused || !isGameRunning) return;
+            
+                                     // 更新方向
+            direction = nextDirection;
+            
+            const gridSize = 15; // 固定网格大小
+            const head = { x: snake[0].x, y: snake[0].y };
+            
+            // 根据方向移动蛇头
+            switch (direction) {
+                case 'up':
+                    head.y -= gridSize;
+                    break;
+                case 'down':
+                    head.y += gridSize;
+                    break;
+                case 'left':
+                    head.x -= gridSize;
+                    break;
+                case 'right':
+                    head.x += gridSize;
+                    break;
+            }
+            
+            // 将新头部添加到蛇
+            snake.unshift(head);
+            
+            // 检查是否吃到食物
+            const ateFood = checkFoodCollision();
+            
+            // 如果没吃到食物，移除尾部
+            if (!ateFood) {
+                snake.pop();
+            }
+            
+            // 检查碰撞
+            if (checkCollision()) {
+                gameOver();
+                return;
+            }
+            
+            // 更新Firebase中的蛇状态
+            if (playerId) {
+                database.ref(`rooms/${gameRoom}/players/${playerId}`).update({
+                    snake: snake,
+                    direction: direction
+                });
+            }
+            
+            // 绘制游戏
+            draw();
+        }
+        
+                         // 绘制游戏
+        function draw() {
+            const gridSize = 15; // 固定网格大小
+            
+            // 清空画布
+            ctx.fillStyle = '#121212';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制边距区域（包边）
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, canvas.width, gameMargin); // 上边距
+            ctx.fillRect(0, canvas.height - gameMargin, canvas.width, gameMargin); // 下边距
+            ctx.fillRect(0, 0, gameMargin, canvas.height); // 左边距
+            ctx.fillRect(canvas.width - gameMargin, 0, gameMargin, canvas.height); // 右边距
+            
+            // 绘制网格背景（仅在有效游戏区域内）
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 1;
+            
+            // 只在有效游戏区域内绘制网格
+            for (let x = gameMargin; x < canvas.width - gameMargin; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, gameMargin);
+                ctx.lineTo(x, canvas.height - gameMargin);
+                ctx.stroke();
+            }
+            
+            for (let y = gameMargin; y < canvas.height - gameMargin; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(gameMargin, y);
+                ctx.lineTo(canvas.width - gameMargin, y);
+                ctx.stroke();
+            }
+            
+            // 绘制其他玩家的蛇
+            Object.values(otherPlayers).forEach(player => {
+                if (player.snake) {
+                    player.snake.forEach((segment, index) => {
+                        // 蛇头特殊样式
+                        if (index === 0) {
+                            // 蛇头背景
+                            ctx.fillStyle = player.color;
+                            ctx.shadowColor = player.color;
+                            ctx.shadowBlur = 10;
+                            ctx.beginPath();
+                            ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.shadowBlur = 0;
+                            
+                            // 绘制蛇头图片（正方形）
+                            if (snakeHeadImage && snakeHeadImage.complete) {
+                                ctx.save();
+                                ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                
+                                // 根据方向旋转图片
+                                let rotation = 0;
+                                switch (player.direction || 'right') {
+                                    case 'up': rotation = -Math.PI / 2; break;
+                                    case 'down': rotation = Math.PI / 2; break;
+                                    case 'left': rotation = Math.PI; break;
+                                    case 'right': rotation = 0; break;
+                                }
+                                ctx.rotate(rotation);
+                                
+                                // 添加水平翻转来修复上下颠倒问题
+                                ctx.scale(1, -1);
+                                ctx.drawImage(snakeHeadImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                ctx.restore();
+                            } else {
+                                // 如果图片未加载，使用默认表情
+                                ctx.fillStyle = 'white';
+                                ctx.font = `${gridSize * 0.7}px "Comic Sans MS", cursive`;
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillText('😜', segment.x + gridSize / 2, segment.y + gridSize / 2);
+                            }
+                            
+                            // 玩家名称标签
+                            ctx.fillStyle = player.color;
+                            ctx.font = `${gridSize * 0.4}px "Comic Sans MS", cursive`;
+                            ctx.fillText(player.name, segment.x + gridSize / 2, segment.y - 10);
+                        } else if (index === player.snake.length - 1) {
+                            // 蛇尾（最后一个位置）
+                            if (snakeTailImage && snakeTailImage.complete) {
+                                ctx.save();
+                                ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                
+                                // 计算蛇尾的方向（基于倒数第二个位置）
+                                let tailDirection = 'right';
+                                if (player.snake.length > 1) {
+                                    const secondLast = player.snake[player.snake.length - 2];
+                                    const last = player.snake[player.snake.length - 1];
+                                    
+                                    if (last.x > secondLast.x) tailDirection = 'right';
+                                    else if (last.x < secondLast.x) tailDirection = 'left';
+                                    else if (last.y > secondLast.y) tailDirection = 'down';
+                                    else if (last.y < secondLast.y) tailDirection = 'up';
+                                }
+                                
+                                                        // 根据方向旋转图片（尾巴根部正确方向）
+                        let rotation = 0;
+                        switch (tailDirection) {
+                            case 'up': rotation = -Math.PI / 2; break;   // 向上：-90度
+                            case 'down': rotation = Math.PI / 2; break;  // 向下：90度
+                            case 'left': rotation = Math.PI; break;      // 向左：180度
+                            case 'right': rotation = 0; break;           // 向右：0度
+                        }
+                                ctx.rotate(rotation);
+                                
+                                // 创建圆形裁剪区域
+                                ctx.beginPath();
+                                ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
+                                ctx.clip();
+                                
+                                ctx.drawImage(snakeTailImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                ctx.restore();
+                            } else {
+                                // 如果图片未加载，使用默认圆形
+                                ctx.fillStyle = player.color;
+                                ctx.beginPath();
+                                ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+                        } else {
+                                                        // 蛇身
+                            if (snakeBodyImage && snakeBodyImage.complete) {
+                                // 计算蛇身的方向（基于前后两个位置）
+                                let bodyDirection = 'right';
+                                let isCorner = false;
+                                
+                                if (index > 0 && index < player.snake.length - 1) {
+                                    const prev = player.snake[index - 1];
+                                    const next = player.snake[index + 1];
+                                    
+                                    // 检查是否是拐弯点（前后位置形成直角）
+                                    isCorner = (prev.x !== next.x) && (prev.y !== next.y);
+                                    
+                                    if (isCorner) {
+                                        // 拐弯点：根据当前段与前一段的相对位置确定方向
+                                        const current = player.snake[index];
+                                        if (current.x > prev.x) bodyDirection = 'right';
+                                        else if (current.x < prev.x) bodyDirection = 'left';
+                                        else if (current.y > prev.y) bodyDirection = 'down';
+                                        else if (current.y < prev.y) bodyDirection = 'up';
+                                    } else {
+                                        // 直线段：使用前后位置计算方向
+                                        if (next.x > prev.x) bodyDirection = 'right';
+                                        else if (next.x < prev.x) bodyDirection = 'left';
+                                        else if (next.y > prev.y) bodyDirection = 'down';
+                                        else if (next.y < prev.y) bodyDirection = 'up';
+                                    }
+                                } else if (index === 0) {
+                                    // 头部后的第一节，使用头部方向
+                                    bodyDirection = player.direction || 'right';
+                                } else {
+                                    // 尾部前的最后一节，使用尾部方向
+                                    const secondLast = player.snake[player.snake.length - 2];
+                                    const last = player.snake[player.snake.length - 1];
+                                    
+                                    if (last.x > secondLast.x) bodyDirection = 'right';
+                                    else if (last.x < secondLast.x) bodyDirection = 'left';
+                                    else if (last.y > secondLast.y) bodyDirection = 'down';
+                                    else if (last.y < secondLast.y) bodyDirection = 'up';
+                                }
+                                
+                                // 根据方向旋转图片
+                                let rotation = 0;
+                                switch (bodyDirection) {
+                                    case 'up': rotation = -Math.PI / 2; break;
+                                    case 'down': rotation = Math.PI / 2; break;
+                                    case 'left': rotation = Math.PI; break;
+                                    case 'right': rotation = 0; break;
+                                }
+                                
+                                if (isCorner) {
+                                    // 拐弯点特殊绘制
+                                    ctx.save();
+                                    ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                    ctx.rotate(rotation);
+                                    
+                                    // 创建圆角矩形作为拐弯连接
+                                    ctx.fillStyle = player.color;
+                                    ctx.shadowColor = player.color;
+                                    ctx.shadowBlur = 5;
+                                    ctx.beginPath();
+                                    ctx.roundRect(-gridSize/2, -gridSize/2, gridSize, gridSize, 8);
+                                    ctx.fill();
+                                    ctx.shadowBlur = 0;
+                                    
+                                    // 绘制身体图片
+                                    ctx.globalCompositeOperation = 'source-over';
+                                    ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                    ctx.restore();
+                                } else {
+                                    // 直线段正常绘制
+                                    ctx.save();
+                                    ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                    ctx.rotate(rotation);
+                                    ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                    ctx.restore();
+                                }
+                            } else {
+                                // 如果图片未加载，使用默认圆形
+                                ctx.fillStyle = player.color;
+                                ctx.beginPath();
+                                ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+                        }
+                    });
+                }
+            });
+            
+            // 绘制自己的蛇
+            snake.forEach((segment, index) => {
+                // 蛇头特殊样式
+                if (index === 0) {
+                    // 蛇头背景
+                    ctx.fillStyle = '#FF3333';
+                    ctx.shadowColor = '#FF3333';
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    
+                    // 绘制蛇头图片（正方形）
+                    if (snakeHeadImage && snakeHeadImage.complete) {
+                        ctx.save();
+                        ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                        
+                        // 根据方向旋转图片
+                        let rotation = 0;
+                        switch (direction) {
+                            case 'up': rotation = -Math.PI / 2; break;
+                            case 'down': rotation = Math.PI / 2; break;
+                            case 'left': rotation = Math.PI; break;
+                            case 'right': rotation = 0; break;
+                        }
+                        ctx.rotate(rotation);
+                        
+                        // 添加水平翻转来修复上下颠倒问题
+                        ctx.scale(1, -1);
+                        ctx.drawImage(snakeHeadImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                        ctx.restore();
+                    } else {
+                        // 如果图片未加载，使用默认表情
+                        ctx.fillStyle = 'white';
+                        ctx.font = `${gridSize * 0.7}px "Comic Sans MS", cursive`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText('😛', segment.x + gridSize / 2, segment.y + gridSize / 2);
+                    }
+                    
+                    // 自己的名称标签
+                    ctx.fillStyle = '#FF3333';
+                    ctx.font = `${gridSize * 0.4}px "Comic Sans MS", cursive`;
+                    ctx.fillText(playerName, segment.x + gridSize / 2, segment.y - 10);
+                                } else if (index === snake.length - 1) {
+                    // 蛇尾（最后一个位置）
+                    if (snakeTailImage && snakeTailImage.complete) {
+                        ctx.save();
+                        ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                        
+                        // 计算蛇尾的方向（基于倒数第二个位置）
+                        let tailDirection = 'right';
+                        if (snake.length > 1) {
+                            const secondLast = snake[snake.length - 2];
+                            const last = snake[snake.length - 1];
+                            
+                            if (last.x > secondLast.x) tailDirection = 'right';
+                            else if (last.x < secondLast.x) tailDirection = 'left';
+                            else if (last.y > secondLast.y) tailDirection = 'down';
+                            else if (last.y < secondLast.y) tailDirection = 'up';
+                        }
+                        
+                        // 根据方向旋转图片（尾巴根部正确方向）
+                        let rotation = 0;
+                        switch (tailDirection) {
+                            case 'up': rotation = -Math.PI / 2; break;   // 向上：-90度
+                            case 'down': rotation = Math.PI / 2; break;  // 向下：90度
+                            case 'left': rotation = Math.PI; break;      // 向左：180度
+                            case 'right': rotation = 0; break;           // 向右：0度
+                        }
+                        ctx.rotate(rotation);
+                        
+                        // 创建圆形裁剪区域
+                        ctx.beginPath();
+                        ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
+                        ctx.clip();
+                        
+                        ctx.drawImage(snakeTailImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                        ctx.restore();
+                    } else {
+                        // 如果图片未加载，使用默认圆形
+                        const colorIndex = (index % memeColors.length);
+                        ctx.fillStyle = memeColors[colorIndex];
+                        ctx.beginPath();
+                        ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                } else {
+                    // 蛇身
+                    if (snakeBodyImage && snakeBodyImage.complete) {
+                        // 计算蛇身的方向（基于前后两个位置）
+                        let bodyDirection = 'right';
+                        let isCorner = false;
+                        
+                        if (index > 0 && index < snake.length - 1) {
+                            const prev = snake[index - 1];
+                            const next = snake[index + 1];
+                            
+                            // 检查是否是拐弯点（前后位置形成直角）
+                            isCorner = (prev.x !== next.x) && (prev.y !== next.y);
+                            
+                            if (isCorner) {
+                                // 拐弯点：根据当前段与前一段的相对位置确定方向
+                                const current = snake[index];
+                                if (current.x > prev.x) bodyDirection = 'right';
+                                else if (current.x < prev.x) bodyDirection = 'left';
+                                else if (current.y > prev.y) bodyDirection = 'down';
+                                else if (current.y < prev.y) bodyDirection = 'up';
+                            } else {
+                                // 直线段：使用前后位置计算方向
+                                if (next.x > prev.x) bodyDirection = 'right';
+                                else if (next.x < prev.x) bodyDirection = 'left';
+                                else if (next.y > prev.y) bodyDirection = 'down';
+                                else if (next.y < prev.y) bodyDirection = 'up';
+                            }
+                        } else if (index === 0) {
+                            // 头部后的第一节，使用头部方向
+                            bodyDirection = direction;
+                        } else {
+                            // 尾部前的最后一节，使用尾部方向
+                            const secondLast = snake[snake.length - 2];
+                            const last = snake[snake.length - 1];
+                            
+                            if (last.x > secondLast.x) bodyDirection = 'right';
+                            else if (last.x < secondLast.x) bodyDirection = 'left';
+                            else if (last.y > secondLast.y) bodyDirection = 'down';
+                            else if (last.y < secondLast.y) bodyDirection = 'up';
+                        }
+                        
+                        // 根据方向旋转图片
+                        let rotation = 0;
+                        switch (bodyDirection) {
+                            case 'up': rotation = -Math.PI / 2; break;
+                            case 'down': rotation = Math.PI / 2; break;
+                            case 'left': rotation = Math.PI; break;
+                            case 'right': rotation = 0; break;
+                        }
+                        
+                        if (isCorner) {
+                            // 拐弯点特殊绘制
+                            ctx.save();
+                            ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                            ctx.rotate(rotation);
+                            
+                            // 创建圆角矩形作为拐弯连接
+                            const colorIndex = (index % memeColors.length);
+                            ctx.fillStyle = memeColors[colorIndex];
+                            ctx.shadowColor = memeColors[colorIndex];
+                            ctx.shadowBlur = 5;
+                            ctx.beginPath();
+                            ctx.roundRect(-gridSize/2, -gridSize/2, gridSize, gridSize, 8);
+                            ctx.fill();
+                            ctx.shadowBlur = 0;
+                            
+                            // 绘制身体图片
+                            ctx.globalCompositeOperation = 'source-over';
+                            ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                            ctx.restore();
+                        } else {
+                            // 直线段正常绘制
+                            ctx.save();
+                            ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                            ctx.rotate(rotation);
+                            ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                            ctx.restore();
+                        }
+                    } else {
+                        // 如果图片未加载，使用默认圆形
+                        const colorIndex = (index % memeColors.length);
+                        ctx.fillStyle = memeColors[colorIndex];
+                        ctx.beginPath();
+                        ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            });
+            
+                         // 绘制普通食物
+             if (foods && foods.length > 0) {
+                 foods.forEach(food => {
+                     ctx.fillStyle = food.color;
+                     ctx.shadowColor = food.color;
+                     ctx.shadowBlur = 10;
+                     ctx.beginPath();
+                     ctx.arc(food.x + gridSize / 2, food.y + gridSize / 2, gridSize / 2, 0, Math.PI * 2);
+                     ctx.fill();
+                     ctx.shadowBlur = 0;
+                     
+                     // 绘制食物图片
+                     if (foodImage && foodImage.complete) {
+                         ctx.save();
+                         ctx.translate(food.x + gridSize / 2, food.y + gridSize / 2);
+                         
+                         // 创建圆形裁剪区域
+                         ctx.beginPath();
+                         ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
+                         ctx.clip();
+                         
+                         ctx.drawImage(foodImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                         ctx.restore();
+                     } else {
+                         // 如果图片未加载，使用默认表情
+                         ctx.fillStyle = 'black';
+                         ctx.font = `${gridSize * 0.5}px "Comic Sans MS", cursive`;
+                         ctx.textAlign = 'center';
+                         ctx.textBaseline = 'middle';
+                         ctx.fillText(food.meme, food.x + gridSize / 2, food.y + gridSize / 2);
+                     }
+                 });
+             }
+            
+                         // 绘制尸体食物
+             if (corpseFoods && corpseFoods.length > 0) {
+                 corpseFoods.forEach(corpseFood => {
+                     // 保存当前上下文
+                     ctx.save();
+                     
+                     // 计算动画效果
+                     const time = Date.now() / 1000;
+                     const pulseScale = 1 + Math.sin(time * (corpseFood.pulse || 2)) * 0.1;
+                     const wiggleOffset = Math.sin(time * 3) * (corpseFood.wiggle || 3);
+                     const rotation = (corpseFood.rotation || 0) + Math.sin(time * 2) * 10;
+                     
+                     // 设置变换
+                     ctx.translate(corpseFood.x + gridSize / 2 + wiggleOffset, corpseFood.y + gridSize / 2);
+                     ctx.rotate(rotation * Math.PI / 180);
+                     ctx.scale(pulseScale, pulseScale);
+                     
+                     // 绘制发光背景
+                     const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, gridSize / 2);
+                     gradient.addColorStop(0, corpseFood.color);
+                     gradient.addColorStop(0.7, corpseFood.color + '80');
+                     gradient.addColorStop(1, 'transparent');
+                     
+                     ctx.fillStyle = gradient;
+                     ctx.shadowColor = corpseFood.color;
+                     ctx.shadowBlur = 20;
+                     ctx.beginPath();
+                     ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
+                     ctx.fill();
+                     
+                     // 绘制边框
+                     ctx.strokeStyle = '#FFFFFF';
+                     ctx.lineWidth = 2;
+                     ctx.beginPath();
+                     ctx.arc(0, 0, gridSize / 2 - 2, 0, Math.PI * 2);
+                     ctx.stroke();
+                     
+                     // 重置阴影
+                     ctx.shadowBlur = 0;
+                     
+                     // 绘制尸体食物图片
+                     if (corpseImage && corpseImage.complete) {
+                         // 创建圆形裁剪区域
+                         ctx.beginPath();
+                         ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
+                         ctx.clip();
+                         
+                         ctx.drawImage(corpseImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                     } else {
+                         // 如果图片未加载，使用默认表情
+                         ctx.fillStyle = '#FFFFFF';
+                         ctx.font = `bold ${gridSize * 0.6}px "Comic Sans MS", cursive`;
+                         ctx.textAlign = 'center';
+                         ctx.textBaseline = 'middle';
+                         ctx.fillText(corpseFood.meme, 0, 0);
+                     }
+                     
+                     // 恢复上下文
+                     ctx.restore();
+                 });
+             }
+             
+             // 绘制特殊食物（闪烁效果）
+             if (specialFood) {
+                 // 闪烁效果
+                 const opacity = 0.5 + Math.sin(Date.now() / 100) * 0.5;
+                 
+                 ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                 ctx.shadowColor = 'white';
+                 ctx.shadowBlur = 20;
+                 
+                 // 旋转动画
+                 ctx.save();
+                 ctx.translate(specialFood.x + gridSize / 2, specialFood.y + gridSize / 2);
+                 ctx.rotate(Date.now() / 500);
+                 
+                 ctx.beginPath();
+                 ctx.rect(-gridSize / 2, -gridSize / 2, gridSize, gridSize);
+                 ctx.fill();
+                 
+                 // 特殊符号
+                 ctx.fillStyle = 'gold';
+                 ctx.font = `${gridSize * 0.7}px "Comic Sans MS", cursive`;
+                 ctx.textAlign = 'center';
+                 ctx.textBaseline = 'middle';
+                 ctx.fillText(specialFood.meme, 0, 0);
+                 
+                 ctx.restore();
+                 ctx.shadowBlur = 0;
+             }
+        }
+        
+        // 开始游戏
+        function startGame() {
+            if (isGameRunning) return;
+            
+            // 验证钱包地址
+            const walletAddress = playerNameInput.value.trim();
+            if (!walletAddress) {
+                alert('Please enter wallet address!');
+                return;
+            }
+            
+            // 验证钱包地址格式
+            if (!walletAddress.match(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/)) {
+                alert('Please enter a valid Solana wallet address!');
+                return;
+            }
+            
+            startScreen.classList.add('hidden');
+            pauseBtn.classList.remove('hidden');
+            roomSwitchBtn.classList.remove('hidden');
+            isGameRunning = true;
+            isPaused = false;
+            
+            // 初始化游戏
+            initGame();
+            
+            // 检查游戏状态
+            database.ref('gameState').once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const gameState = snapshot.val();
+                    if (gameState.isRunning) {
+                        // 游戏正在运行，开始游戏循环
+                        gameLoop = setInterval(gameUpdate, gameSpeed);
+                    } else {
+                        // 游戏被暂停，显示暂停消息
+                        showGamePausedMessage();
+                    }
+                } else {
+                    // 没有游戏状态，默认开始
+                    gameLoop = setInterval(gameUpdate, gameSpeed);
+                }
+            });
+        }
+        
+        // 切换房间
+        function switchRoom() {
+            if (!isGameRunning) return;
+            
+            // 暂停游戏
+            isPaused = true;
+            
+            // 移除当前房间的玩家数据
+            if (playerId) {
+                database.ref(`rooms/${gameRoom}/players/${playerId}`).remove();
+            }
+            
+            // 显示房间选择
+            startScreen.classList.remove('hidden');
+            pauseBtn.classList.add('hidden');
+            roomSwitchBtn.classList.add('hidden');
+            
+            // 停止游戏循环
+            clearInterval(gameLoop);
+            isGameRunning = false;
+            
+            // 清空钱包地址输入框，让用户重新输入
+            playerNameInput.value = '';
+        }
+        
+        // 暂停/继续游戏
+        function togglePause() {
+            if (!isGameRunning) return;
+            
+            isPaused = !isPaused;
+            pauseBtn.innerHTML = isPaused ? 
+                '<i class="fa fa-play text-xl"></i>' : 
+                '<i class="fa fa-pause text-xl"></i>';
+        }
+        
+        // 游戏结束
+        function gameOver() {
+            clearInterval(gameLoop);
+            isGameRunning = false;
+            gameOverScreen.classList.remove('hidden');
+            pauseBtn.classList.add('hidden');
+            
+            // 将死亡的蛇身体变成尸体食物
+            createCorpseFoods();
+            
+            // 更新玩家状态为死亡
+            if (playerId) {
+                database.ref(`rooms/${gameRoom}/players/${playerId}`).update({
+                    alive: false
+                });
+            }
+            
+            // 保存最高分到排行榜
+            saveHighScore();
+            
+            // 获取并显示当前排行榜
+            database.ref(`rooms/${gameRoom}/leaderboard`).once('value', (snapshot) => {
+                const leaderboard = snapshot.val() || [];
+                updateLeaderboardDisplay(leaderboard);
+            });
+        }
+        
+        // 创建尸体食物
+        function createCorpseFoods() {
+            if (snake && snake.length > 0) {
+                const gridSize = 15; // 固定网格大小
+                const newCorpseFoods = [];
+                
+                // 随机选择meme表情
+                const memeEmojis = ['💀', '☠️', '👻', '🤡', '😵', '💩', '🔥', '⚰️', '🪦', '🧟'];
+                const memeColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'];
+                
+                // 将蛇身体的每个部分变成尸体食物
+                snake.forEach((segment, index) => {
+                    // 确保尸体食物在有效游戏区域内
+                    const canvasWidth = 1200;
+                    const canvasHeight = 960;
+                    const margin = Math.floor(canvasWidth * 0.05); // 60px边距
+                    const effectiveWidth = canvasWidth - 2 * margin;
+                    const effectiveHeight = canvasHeight - 2 * margin;
+                    
+                    // 计算网格坐标
+                    const gridX = Math.floor((segment.x - margin) / gridSize);
+                    const gridY = Math.floor((segment.y - margin) / gridSize);
+                    
+                    // 确保在有效范围内
+                    const maxGridX = Math.floor(effectiveWidth / gridSize) - 1;
+                    const maxGridY = Math.floor(effectiveHeight / gridSize) - 1;
+                    
+                    const clampedGridX = Math.max(0, Math.min(gridX, maxGridX));
+                    const clampedGridY = Math.max(0, Math.min(gridY, maxGridY));
+                    
+                    // 转换回像素坐标
+                    const clampedX = margin + clampedGridX * gridSize;
+                    const clampedY = margin + clampedGridY * gridSize;
+                    
+                    const randomMeme = memeEmojis[Math.floor(Math.random() * memeEmojis.length)];
+                    const randomColor = memeColors[Math.floor(Math.random() * memeColors.length)];
+                    
+                    const corpseFood = {
+                        x: clampedX,
+                        y: clampedY,
+                        color: randomColor, // 随机meme颜色
+                        meme: randomMeme,
+                        timestamp: Date.now(),
+                        id: 'corpse_' + Date.now() + '_' + index,
+                        // 移除玩家名字，不再显示
+                        originalColor: playerColor || '#FF3333',
+                        rotation: Math.random() * 360, // 随机旋转角度
+                        pulse: Math.random() * 2 + 1, // 随机脉冲速度
+                        wiggle: Math.random() * 10 - 5 // 随机摆动幅度
+                    };
+                    newCorpseFoods.push(corpseFood);
+                });
+                
+                // 获取现有的尸体食物并添加新的
+                database.ref(`rooms/${gameRoom}/corpseFoods`).once('value', (snapshot) => {
+                    const existingCorpseFoods = snapshot.val() || [];
+                    const allCorpseFoods = [...existingCorpseFoods, ...newCorpseFoods];
+                    database.ref(`rooms/${gameRoom}/corpseFoods`).set(allCorpseFoods);
+                });
+            }
+        }
+        
+        // 保存最高分到排行榜
+        function saveHighScore() {
+            const leaderboardRef = database.ref(`rooms/${gameRoom}/leaderboard`);
+            leaderboardRef.once('value', (snapshot) => {
+                let leaderboard = snapshot.val() || [];
+                
+                // 检查是否已经存在该玩家的记录
+                const existingIndex = leaderboard.findIndex(entry => entry.playerId === playerId);
+                
+                if (existingIndex !== -1) {
+                    // 更新现有记录
+                    if (score > leaderboard[existingIndex].score) {
+                        leaderboard[existingIndex] = {
+                            playerId: playerId,
+                            playerName: playerName,
+                            wallet: playerWallet,
+                            score: score,
+                            timestamp: Date.now()
+                        };
+                    }
+                } else {
+                    // 添加新记录
+                    leaderboard.push({
+                        playerId: playerId,
+                        playerName: playerName,
+                        wallet: playerWallet,
+                        score: score,
+                        timestamp: Date.now()
+                    });
+                }
+                
+                // 按分数降序排序
+                leaderboard.sort((a, b) => b.score - a.score);
+                
+                // 只保留前10名
+                leaderboard = leaderboard.slice(0, 10);
+                
+                // 保存到数据库
+                leaderboardRef.set(leaderboard);
+            });
+        }
+        
+        // 显示领取奖励弹窗
+        function showClaimRewardModal() {
+            const modal = document.getElementById('claimRewardModal');
+            modal.classList.remove('hidden');
+            
+            // 如果当前有玩家钱包地址，自动填充
+            if (playerWallet) {
+                document.getElementById('walletAddressInput').value = playerWallet;
+            }
+        }
+        
+        // 隐藏领取奖励弹窗
+        function hideClaimRewardModal() {
+            const modal = document.getElementById('claimRewardModal');
+            modal.classList.add('hidden');
+            document.getElementById('claimResult').classList.add('hidden');
+        }
+        
+        // 查看积分
+        async function checkScore() {
+            const walletAddress = document.getElementById('walletAddressInput').value.trim();
+            if (!walletAddress) {
+                showClaimResult('Please enter wallet address', 'error');
+                return;
+            }
+            
+            try {
+                const userRef = database.ref(`users/${walletAddress}`);
+                const snapshot = await userRef.once('value');
+                const userData = snapshot.val();
+                const totalScore = userData ? (userData.score || 0) : 0;
+                
+                document.getElementById('totalScore').textContent = totalScore;
+                document.getElementById('tokenAmount').textContent = totalScore * 10; // 1积分 = 10代币
+                
+                showClaimResult(`Query successful! Wallet ${walletAddress.substring(0, 8)}...${walletAddress.substring(walletAddress.length - 4)} has ${totalScore} points`, 'success');
+            } catch (error) {
+                showClaimResult('Failed to query points: ' + error.message, 'error');
+            }
+        }
+        
+        // 兑换代币
+        async function claimToken() {
+            const walletAddress = document.getElementById('walletAddressInput').value.trim();
+            if (!walletAddress) {
+                showClaimResult('Please enter wallet address', 'error');
+                return;
+            }
+            
+            try {
+                showClaimResult('Processing claim request...', 'info');
+                
+                const result = await claimTokenFunction({ wallet: walletAddress });
+                
+                if (result.data.success) {
+                    // 隐藏当前弹窗
+                    hideClaimRewardModal();
+                    
+                    // 获取实际兑换的积分数量
+                    const scoreAmount = parseInt(document.getElementById('totalScore').textContent) || 0;
+                    const tokenAmount = scoreAmount * 10; // 1积分 = 10代币
+                    
+                    // 显示成功弹窗
+                    showSuccessModal(result.data.tx, tokenAmount);
+                    
+                    // 刷新积分显示
+                    setTimeout(() => {
+                        checkScore();
+                    }, 1000);
+                } else {
+                    showClaimResult('Claim failed: ' + (result.data.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showClaimResult('Claim failed: ' + error.message, 'error');
+            }
+        }
+        
+        // 显示结果信息
+        function showClaimResult(message, type) {
+            const resultDiv = document.getElementById('claimResult');
+            resultDiv.className = `mt-4 p-3 rounded ${type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600'} text-white`;
+            resultDiv.textContent = message;
+            resultDiv.classList.remove('hidden');
+        }
+        
+        // 显示兑换成功弹窗
+        function showSuccessModal(txHash, amount) {
+            // 创建成功弹窗
+            const successModal = document.createElement('div');
+            successModal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
+            successModal.innerHTML = `
+                <div class="bg-gray-800 p-6 rounded-lg border-2 border-memeGreen max-w-md w-full mx-4">
+                    <div class="text-center">
+                        <div class="text-6xl mb-4">🎉</div>
+                        <h3 class="text-2xl font-bold text-memeGreen mb-4">Claim Successful!</h3>
+                        <div class="mb-4 p-3 bg-gray-700 rounded">
+                            <div class="text-lg font-bold text-memeYellow mb-2">${amount} Tokens</div>
+                            <div class="text-sm text-gray-400">Sent to your wallet</div>
+                        </div>
+                        <div class="mb-4 p-3 bg-gray-700 rounded text-left">
+                            <div class="text-sm text-gray-400 mb-1">Transaction Hash:</div>
+                            <div class="text-xs text-memeBlue break-all font-mono">${txHash}</div>
+                        </div>
+                        <div class="mb-4 text-sm text-gray-400">
+                            You can view transaction details in Solana Explorer
+                        </div>
+                        <button class="bg-memeGreen hover:bg-memeGreen/80 text-black py-2 px-6 rounded font-bold" onclick="this.parentElement.parentElement.parentElement.remove()">
+                            OK
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // 添加到页面
+            document.body.appendChild(successModal);
+            
+            // 点击背景关闭弹窗
+            successModal.addEventListener('click', (e) => {
+                if (e.target === successModal) {
+                    successModal.remove();
+                }
+            });
+        }
+        
+        // 重启游戏
+        function restartGame() {
+            // 移除旧玩家数据
+            if (playerId) {
+                database.ref(`rooms/${gameRoom}/players/${playerId}`).remove();
+            }
+            
+            gameOverScreen.classList.add('hidden');
+            
+            // 重新显示开始屏幕，让用户重新输入钱包地址
+            startScreen.classList.remove('hidden');
+            pauseBtn.classList.add('hidden');
+            roomSwitchBtn.classList.add('hidden');
+            isGameRunning = false;
+            isPaused = false;
+            
+            // 清空钱包地址输入框
+            playerNameInput.value = '';
+        }
+        
+        // 处理键盘输入
+        function handleKeyPress(e) {
+            // 阻止方向键滚动页面
+            if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+            
+            // 只在游戏运行时处理方向键，或者处理空格键
+            if (!isGameRunning && e.key !== ' ') return;
+            
+            switch (e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    if (direction !== 'down') {
+                        nextDirection = 'up';
+                    }
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    if (direction !== 'up') {
+                        nextDirection = 'down';
+                    }
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    if (direction !== 'right') {
+                        nextDirection = 'left';
+                    }
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    if (direction !== 'left') {
+                        nextDirection = 'right';
+                    }
+                    break;
+                case ' ': // 空格键暂停/继续
+                    if (isGameRunning) {
+                        togglePause();
+                    } else if (!startScreen.classList.contains('hidden')) {
+                        startGame();
+                    }
+                    break;
+            }
+        }
+        
+        // 事件监听
+        document.addEventListener('keydown', handleKeyPress);
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', restartGame);
+        pauseBtn.addEventListener('click', togglePause);
+        roomSwitchBtn.addEventListener('click', switchRoom);
+        
+        // 领取奖励相关事件监听
+        document.getElementById('claimRewardBtn').addEventListener('click', showClaimRewardModal);
+        document.getElementById('closeClaimModal').addEventListener('click', hideClaimRewardModal);
+        document.getElementById('checkScoreBtn').addEventListener('click', checkScore);
+        document.getElementById('claimTokenBtn').addEventListener('click', claimToken);
+        
+        // 颜色选择
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // 移除其他按钮的选中状态
+                document.querySelectorAll('.color-btn').forEach(b => {
+                    b.classList.remove('border-white');
+                    b.classList.add('border-gray-600');
+                });
+                
+                // 选中当前按钮
+                btn.classList.remove('border-gray-600');
+                btn.classList.add('border-white');
+                
+                // 保存选择的颜色
+                playerColor = btn.dataset.color;
+            });
+        });
+        
+        // 不预填充钱包地址，让用户必须输入
+        playerNameInput.value = '';
+        
+        // 默认选择第一个颜色
+        document.querySelector('.color-btn').click();
+    </script>
+</body>
+</html>

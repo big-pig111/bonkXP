@@ -1,0 +1,25 @@
+{
+  "name": "windows-xp-chat-server",
+  "version": "1.0.0",
+  "description": "Windows XP 聊天室后端服务器",
+  "main": "server.js",
+  "scripts": {
+    "start": "echo '请直接在浏览器中打开 index.html'",
+    "dev": "echo '请直接在浏览器中打开 index.html'"
+  },
+  "keywords": [
+    "websocket",
+    "chat",
+    "windows-xp",
+    "real-time"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {}
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+} 
