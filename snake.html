@@ -850,9 +850,9 @@
                               index === 1 ? 'text-gray-300' : 
                               index === 2 ? 'text-amber-700' : '';
                 
-                // 格式化时间
+                // 格式化时间 (UTC)
                 const date = new Date(entry.timestamp);
-                const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+                const timeStr = `${date.getUTCMonth() + 1}/${date.getUTCDate()} ${date.getUTCHours()}:${date.getUTCMinutes().toString().padStart(2, '0')} UTC`;
                 
                 li.innerHTML = `${index + 1}. ${entry.playerName} - ${entry.score} pts <span class="text-xs text-gray-500">(${timeStr})</span>`;
                 leaderboardElement.appendChild(li);
@@ -2345,9 +2345,9 @@
                 else if (index === 1) rankClass = 'text-gray-300 font-bold';
                 else if (index === 2) rankClass = 'text-amber-700 font-bold';
                 
-                // 格式化时间
+                // 格式化时间 (UTC)
                 const date = new Date(entry.timestamp);
-                const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+                const timeStr = `${date.getUTCMonth() + 1}/${date.getUTCDate()} ${date.getUTCHours()}:${date.getUTCMinutes().toString().padStart(2, '0')} UTC`;
                 
                 // 格式化钱包地址
                 const shortWallet = entry.wallet ? 
