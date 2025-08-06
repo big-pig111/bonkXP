@@ -1136,10 +1136,10 @@ class WindowsXP {
             messageArea.scrollTop = messageArea.scrollHeight;
         }
         
-        // 获取当前时间
+        // 获取当前时间 (UTC)
         function getCurrentTime() {
             const now = new Date();
-            return `[${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}]`;
+            return `[${now.getUTCHours().toString().padStart(2, '0')}:${now.getUTCMinutes().toString().padStart(2, '0')} UTC]`;
         }
         
         // 更新用户列表
@@ -1717,10 +1717,7 @@ class WindowsXP {
     updateClock() {
         const updateTime = () => {
             const now = new Date();
-            const timeString = now.toLocaleTimeString('zh-CN', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            const timeString = now.toISOString().slice(11, 16) + ' UTC';
             document.getElementById('current-time').textContent = timeString;
         };
         
