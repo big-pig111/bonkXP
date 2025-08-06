@@ -225,12 +225,12 @@
         let serverAddress = '';
         let socket = null; // For storing WebSocket connection
         
-        // Update system time
+        // Update system time (UTC)
         function updateSystemTime() {
             const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            systemTime.textContent = `${hours}:${minutes}`;
+            const hours = now.getUTCHours().toString().padStart(2, '0');
+            const minutes = now.getUTCMinutes().toString().padStart(2, '0');
+            systemTime.textContent = `${hours}:${minutes} UTC`;
         }
         
         // Initialize system time and update every second
@@ -274,10 +274,10 @@
             messageArea.scrollTop = messageArea.scrollHeight;
         }
         
-        // Get current time (HH:MM)
+        // Get current time (UTC)
         function getCurrentTime() {
             const now = new Date();
-            return `[${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}]`;
+            return `[${now.getUTCHours().toString().padStart(2, '0')}:${now.getUTCMinutes().toString().padStart(2, '0')} UTC]`;
         }
         
         // Update user list
