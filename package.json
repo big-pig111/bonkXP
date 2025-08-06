@@ -1,24 +1,26 @@
 {
-  "name": "windows-xp-chat-server",
+  "name": "bonkxp-windows-xp-simulator",
   "version": "1.0.0",
-  "description": "Windows XP 聊天室后端服务器",
-  "main": "server.js",
+  "description": "Windows XP Simulator with Multiplayer Snake Game and Blockchain Integration",
+  "main": "index.html",
   "scripts": {
     "start": "echo '请直接在浏览器中打开 index.html'",
-    "dev": "echo '请直接在浏览器中打开 index.html'"
+    "dev": "echo '请直接在浏览器中打开 index.html'",
+    "build": "echo '静态网站，无需构建'"
   },
   "keywords": [
-    "websocket",
-    "chat",
     "windows-xp",
-    "real-time"
+    "simulator",
+    "snake-game",
+    "blockchain",
+    "firebase",
+    "chat",
+    "multiplayer"
   ],
-  "author": "Your Name",
+  "author": "BonkXP Team",
   "license": "MIT",
-  "dependencies": {}
-  "devDependencies": {
-    "nodemon": "^2.0.22"
-  },
+  "dependencies": {},
+  "devDependencies": {},
   "engines": {
     "node": ">=14.0.0"
   }
