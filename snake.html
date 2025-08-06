@@ -23,7 +23,7 @@
         <source src="2.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
-
+    
     <style type="text/tailwindcss">
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
         
@@ -132,7 +132,7 @@
         }
         
         .music-indicator {
-            position: absolute;
+                position: absolute;
             top: -5px;
             right: -5px;
             width: 15px;
@@ -277,6 +277,8 @@
                 <i class="fa fa-exchange text-xl"></i>
             </button>
             
+            <!-- 邀请按钮已移至领取奖励界面 -->
+            
             <!-- Claim Rewards Modal -->
             <div id="claimRewardModal" class="absolute inset-0 bg-gray-900/95 flex items-center justify-center z-20 hidden">
                 <div class="bg-gray-800 p-6 rounded-lg border-2 border-memeGreen max-w-md w-full mx-4">
@@ -317,15 +319,76 @@
                         </button>
                     </div>
                     
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 mb-4">
                         <button id="viewLeaderboardBtn" class="flex-1 bg-memePink hover:bg-memePink/80 text-white py-2 px-4 rounded font-bold">
                             <i class="fa fa-trophy mr-2"></i>Global Leaderboard
+                        </button>
+                        <button id="inviteSystemBtn" class="flex-1 bg-memeYellow hover:bg-yellow-500 text-black py-2 px-4 rounded font-bold">
+                            <i class="fa fa-users mr-2"></i>Invite System
                         </button>
                     </div>
                     
                     <div id="claimResult" class="mt-4 p-3 rounded hidden">
                         <!-- Result display area -->
                     </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Invite System Modal -->
+        <div id="inviteModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
+            <div class="bg-gray-800 p-6 rounded-lg border-2 border-memeYellow max-w-md w-full mx-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-memeYellow">👥 Invite System</h2>
+                    <button id="closeInviteModal" class="text-gray-400 hover:text-white text-2xl">×</button>
+                </div>
+                
+                <!-- My Invite Code Section -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold text-white mb-2">My Invite Code</h3>
+                    <div class="bg-gray-700 p-3 rounded-lg mb-2">
+                        <div class="flex items-center justify-between">
+                            <span id="myInviteCode" class="text-memeYellow font-mono text-lg">--------</span>
+                            <button id="copyInviteBtn" class="bg-memeYellow text-black px-3 py-1 rounded hover:bg-yellow-500 text-sm">
+                                <i class="fa fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 text-sm">Share your invite code, each valid user you invite gets permanent 10% bonus points!</p>
+                </div>
+                
+                <!-- Enter Invite Code Section -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold text-white mb-2">Enter Invite Code</h3>
+                    <div class="flex gap-2">
+                        <input type="text" id="inviteCodeInput" placeholder="Enter 8-digit invite code" 
+                               class="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-memeYellow focus:outline-none"
+                               maxlength="8">
+                        <button id="submitInviteBtn" class="bg-memeGreen text-white px-4 py-2 rounded hover:bg-green-600">
+                            Submit
+                        </button>
+                    </div>
+                    <p class="text-gray-400 text-sm mt-1">You can only submit once, after which you start as a valid user</p>
+                </div>
+                
+                <!-- Invite Stats Section -->
+                <div class="mb-4">
+                    <h3 class="text-lg font-bold text-white mb-2">Invite Stats</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-700 p-3 rounded text-center">
+                            <div class="text-memeGreen text-xl font-bold" id="invitedCount">0</div>
+                            <div class="text-gray-400 text-sm">Invited</div>
+                        </div>
+                        <div class="bg-gray-700 p-3 rounded text-center">
+                            <div class="text-memeYellow text-xl font-bold" id="bonusPercent">0%</div>
+                            <div class="text-gray-400 text-sm">Bonus Points</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Current Status -->
+                <div class="text-center">
+                    <p class="text-gray-400 text-sm" id="inviteStatus">Loading...</p>
                 </div>
             </div>
         </div>
@@ -473,6 +536,16 @@
         // Sound Effects Elements
         const eatSound = document.getElementById('eatSound');
         let soundVolume = 0.7;
+        
+        // Invite System Variables
+        let inviteData = {
+            myInviteCode: '',
+            invitedBy: '',
+            invitedUsers: [],
+            inviteBonus: 0,
+            hasUsedInviteCode: false,
+            isValidUser: false
+        };
         
                 // Game State Variables
         let playerId = null;
@@ -702,37 +775,37 @@
              level = 1;
              gameSpeed = 100; // Slightly increase speed to adapt to larger game area
             
-            // 更新UI
+            // Update UI
             updateScore();
             
-            // 保存玩家信息到Firebase
+            // Save player info to Firebase
             savePlayerInfo();
             
-            // 监听其他玩家和食物
+            // Listen for other players and food
             listenForGameUpdates();
             
-            // 初始化排行榜显示
+            // Initialize leaderboard display
             database.ref(`rooms/${gameRoom}/leaderboard`).once('value', (snapshot) => {
                 const leaderboard = snapshot.val() || [];
                 updateLeaderboardDisplay(leaderboard);
             });
             
-            // 初始生成食物（如果不存在）
+            // Generate initial food (if doesn't exist)
             database.ref(`rooms/${gameRoom}/foods`).once('value', (snapshot) => {
                 if (!snapshot.exists() || !snapshot.val() || snapshot.val().length === 0) {
                     generateInitialFoods();
                 }
             });
             
-            // 绘制初始状态
+            // Draw initial state
             draw();
         }
         
-        // 保存玩家信息到Firebase
+        // Save player info to Firebase
         function savePlayerInfo() {
             const playerRef = database.ref(`rooms/${gameRoom}/players/${playerId}`);
             
-            // 设置玩家初始信息
+            // Set player initial info
             playerRef.set({
                 name: playerName,
                 wallet: playerWallet,
@@ -745,12 +818,12 @@
                 lastActive: Date.now()
             });
             
-            // 当页面关闭时移除玩家
+            // Remove player when page closes
             window.addEventListener('beforeunload', () => {
                 playerRef.remove();
             });
             
-            // 定期更新最后活动时间
+            // Regularly update last active time
             setInterval(() => {
                 if (isGameRunning && !isPaused) {
                     playerRef.update({
@@ -760,9 +833,9 @@
             }, 5000);
         }
         
-        // 监听游戏更新
+        // Listen for game updates
         function listenForGameUpdates() {
-            // 监听游戏状态
+            // Listen for game state
             database.ref('gameState').on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     const gameState = snapshot.val();
@@ -770,12 +843,12 @@
                 }
             });
             
-            // 监听其他玩家
+            // Listen for other players
             database.ref(`rooms/${gameRoom}/players`).on('value', (snapshot) => {
                 const players = snapshot.val() || {};
                 otherPlayers = {};
                 
-                // 更新玩家列表
+                // Update player list
                 playersListElement.innerHTML = '';
                 playerCountElement.textContent = Object.keys(players).length;
                 
@@ -786,19 +859,19 @@
                         activeCount++;
                     }
                     
-                    // 添加到玩家列表
+                    // Add to player list
                     const li = document.createElement('li');
                     li.className = id === playerId ? 'text-memeGreen font-bold' : '';
                     li.innerHTML = `<span style="color: ${players[id].color}">●</span> ${players[id].name} (${players[id].score})`;
                     playersListElement.appendChild(li);
                 });
                 
-                // 更新统计信息
+                // Update statistics
                 totalPlayersElement.textContent = Object.keys(players).length;
                 activePlayersElement.textContent = activeCount + (isGameRunning ? 1 : 0);
             });
             
-            // 监听食物
+            // Listen for food
             database.ref(`rooms/${gameRoom}/foods`).on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     foods = snapshot.val() || [];
@@ -807,7 +880,7 @@
                 }
             });
             
-            // 监听特殊食物
+            // Listen for special food
             database.ref(`rooms/${gameRoom}/specialFood`).on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     specialFood = snapshot.val();
@@ -816,7 +889,7 @@
                 }
             });
             
-            // 监听尸体食物
+            // Listen for corpse food
             database.ref(`rooms/${gameRoom}/corpseFoods`).on('value', (snapshot) => {
                 if (snapshot.exists()) {
                     corpseFoods = snapshot.val() || [];
@@ -825,7 +898,7 @@
                 }
             });
             
-            // 监听房间排行榜
+            // Listen for room leaderboard
             database.ref(`rooms/${gameRoom}/leaderboard`).on('value', (snapshot) => {
                 const leaderboard = snapshot.val() || [];
                 let maxScore = 0;
@@ -836,28 +909,28 @@
                 
                 roomHighScoreElement.textContent = maxScore;
                 
-                // 更新排行榜显示
+                // Update leaderboard display
                 updateLeaderboardDisplay(leaderboard);
             });
         }
         
-        // 处理游戏状态变化
+        // Handle game state changes
         function handleGameStateChange(gameState) {
             if (!gameState.isRunning && isGameRunning) {
-                // 游戏被暂停
+                // Game was paused
                 pauseGame();
                 showGamePausedMessage();
             } else if (gameState.isRunning && !isGameRunning) {
-                // 游戏恢复
+                // Game resumed
                 resumeGame();
                 hideGamePausedMessage();
             }
             
-            // 更新倒计时显示
+            // Update countdown display
             updateCountdown(gameState.nextReset);
         }
         
-        // 显示游戏暂停消息
+        // Show game paused message
         function showGamePausedMessage() {
             const message = document.createElement('div');
             message.id = 'gamePausedMessage';
@@ -871,7 +944,7 @@
             canvas.parentElement.appendChild(message);
         }
         
-        // 隐藏游戏暂停消息
+        // Hide game paused message
         function hideGamePausedMessage() {
             const message = document.getElementById('gamePausedMessage');
             if (message) {
@@ -879,7 +952,7 @@
             }
         }
         
-        // 更新倒计时显示
+        // Update countdown display
         function updateCountdown(nextReset) {
             if (!nextReset) return;
             
@@ -887,12 +960,12 @@
             const minutes = Math.floor(timeLeft / 60000);
             const seconds = Math.floor((timeLeft % 60000) / 1000);
             
-            // 更新倒计时显示
+            // Update countdown display
             const countdownEl = document.getElementById('countdown');
             if (countdownEl) {
                 countdownEl.textContent = `Next Reset: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 
-                // 当时间少于5分钟时显示警告
+                // Show warning when time is less than 5 minutes
                 if (timeLeft < 300000) {
                     countdownEl.className = 'text-red-400 font-bold';
                 } else if (timeLeft < 600000) {
@@ -902,14 +975,14 @@
                 }
             }
             
-            // 检查是否需要重置排行榜（当倒计时结束时）
+            // Check if leaderboard needs to be reset (when countdown ends)
             if (timeLeft <= 0) {
-                // 可以在这里添加排行榜重置逻辑
-                // 目前排行榜会持续保存，除非管理员手动重置
+                // Can add leaderboard reset logic here
+                // Currently leaderboard persists unless admin manually resets
             }
         }
         
-        // 暂停游戏
+        // Pause game
         function pauseGame() {
             isGameRunning = false;
             if (gameLoop) {
@@ -918,7 +991,7 @@
             }
         }
         
-        // 恢复游戏
+        // Resume game
         function resumeGame() {
             if (!isGameRunning) {
                 isGameRunning = true;
@@ -926,7 +999,7 @@
             }
         }
         
-        // 启动游戏循环
+        // Start game loop
         function startGameLoop() {
             if (gameLoop) {
                 clearInterval(gameLoop);
@@ -934,7 +1007,7 @@
             gameLoop = setInterval(gameUpdate, gameSpeed);
         }
         
-        // 更新排行榜显示
+        // Update leaderboard display
         function updateLeaderboardDisplay(leaderboard) {
             leaderboardElement.innerHTML = '';
             
@@ -944,7 +1017,7 @@
                               index === 1 ? 'text-gray-300' : 
                               index === 2 ? 'text-amber-700' : '';
                 
-                // 格式化时间 (UTC)
+                // Format time (UTC)
                 const date = new Date(entry.timestamp);
                 const timeStr = `${date.getUTCMonth() + 1}/${date.getUTCDate()} ${date.getUTCHours()}:${date.getUTCMinutes().toString().padStart(2, '0')} UTC`;
                 
@@ -953,18 +1026,18 @@
             });
         }
         
-        // 更新当前玩家排行榜（用于实时显示）
+        // Update current player leaderboard (for real-time display)
         function updateLeaderboard(players) {
-            // 这个函数现在主要用于实时显示当前在线玩家的分数
-            // 不再用于持久化排行榜
+            // This function is now mainly used for real-time display of current online player scores
+            // No longer used for persistent leaderboard
         }
         
 
         
-        // 生成初始食物（生成多个食物）
+        // Generate initial food (generate multiple foods)
         function generateInitialFoods() {
-            const gridSize = 15; // 固定网格大小
-            const foodsToGenerate = Math.min(MAX_FOODS, 3); // 初始生成3个食物
+            const gridSize = 15; // Fixed grid size
+            const foodsToGenerate = Math.min(MAX_FOODS, 3); // Initially generate 3 foods
             
             database.ref(`rooms/${gameRoom}/players`).once('value', (snapshot) => {
                 const players = snapshot.val() || {};
@@ -977,34 +1050,34 @@
                     }
                 }
                 
-                // 保存所有食物到Firebase
+                // Save all foods to Firebase
                 database.ref(`rooms/${gameRoom}/foods`).set(newFoods);
             });
         }
         
-        // 生成单个食物
+        // Generate single food
         function generateSingleFood(players, existingFoods = []) {
-            // 使用固定的网格尺寸，确保所有玩家看到相同的地图
-            const gridSize = 15; // 固定网格大小
+            // Use fixed grid dimensions to ensure all players see the same map
+            const gridSize = 15; // Fixed grid size
             let attempts = 0;
             const maxAttempts = 100;
             
             while (attempts < maxAttempts) {
                 attempts++;
-                // 使用固定的画布尺寸计算有效游戏区域
+                // Use fixed canvas dimensions to calculate effective game area
                 const canvasWidth = 1200;
                 const canvasHeight = 960;
-                const margin = Math.floor(canvasWidth * 0.05); // 60px边距
+                const margin = Math.floor(canvasWidth * 0.05); // 60px margin
                 const effectiveWidth = canvasWidth - 2 * margin;
                 const effectiveHeight = canvasHeight - 2 * margin;
                 const gridCols = Math.floor(effectiveWidth / gridSize);
                 const gridRows = Math.floor(effectiveHeight / gridSize);
                 
-                // 生成随机网格坐标（在有效区域内）
+                // Generate random grid coordinates (within effective area)
                 const gridX = Math.floor(Math.random() * gridCols);
                 const gridY = Math.floor(Math.random() * gridRows);
                 
-                // 转换为像素坐标（加上边距偏移）
+                // Convert to pixel coordinates (add margin offset)
                 const pixelX = margin + gridX * gridSize;
                 const pixelY = margin + gridY * gridSize;
                 
@@ -1019,7 +1092,7 @@
                 
                 let validPosition = true;
                 
-                // 检查是否与当前玩家蛇身重叠
+                // Check if overlaps with current player snake body
                 for (let segment of snake) {
                     if (segment.x === newFood.x && segment.y === newFood.y) {
                         validPosition = false;
@@ -1029,7 +1102,7 @@
                 
                 if (!validPosition) continue;
                 
-                // 检查是否与其他玩家蛇身重叠
+                // Check if overlaps with other player snake bodies
                 Object.values(players).forEach(player => {
                     if (player.snake && player.alive) {
                         for (let segment of player.snake) {
@@ -1042,14 +1115,14 @@
                     if (!validPosition) return;
                 });
                 
-                // 检查是否与现有食物重叠
+                // Check if overlaps with existing foods
                 existingFoods.forEach(food => {
                     if (food.x === newFood.x && food.y === newFood.y) {
                         validPosition = false;
                     }
                 });
                 
-                // 检查是否与尸体食物重叠
+                // Check if overlaps with corpse foods
                 if (corpseFoods && corpseFoods.length > 0) {
                     corpseFoods.forEach(corpseFood => {
                         if (corpseFood.x === newFood.x && corpseFood.y === newFood.y) {
@@ -1063,23 +1136,23 @@
                 }
             }
             
-            // 如果找不到有效位置，返回null
+            // If no valid position found, return null
             return null;
         }
         
-        // 生成普通食物（当食物被吃掉时调用）
+                // Generate normal food (called when food is eaten)
         function generateFood() {
-            const gridSize = 15; // 固定网格大小
+            const gridSize = 15; // Fixed grid size
             
-            // 确保食物不会出现在任何蛇身上
+            // Ensure food doesn't appear on any snake body
             database.ref(`rooms/${gameRoom}/players`).once('value', (snapshot) => {
                 const players = snapshot.val() || {};
                 
-                // 获取当前食物列表
+                // Get current food list
                 database.ref(`rooms/${gameRoom}/foods`).once('value', (foodsSnapshot) => {
                     const currentFoods = foodsSnapshot.val() || [];
                     
-                    // 如果当前食物数量少于最大数量，生成新食物
+                    // If current food count is less than maximum, generate new food
                     if (currentFoods.length < MAX_FOODS) {
                         const newFood = generateSingleFood(players, currentFoods);
                         if (newFood) {
@@ -1091,13 +1164,13 @@
             });
         }
         
-                         // 生成特殊食物
+        // Generate special food
         function generateSpecialFood() {
-            // 使用固定的网格尺寸，确保所有玩家看到相同的地图
-            const gridSize = 15; // 固定网格大小
+            // Use fixed grid dimensions to ensure all players see the same map
+            const gridSize = 15; // Fixed grid size
             let newFood;
             
-            // 确保特殊食物不会出现在任何蛇身上或普通食物位置
+            // Ensure special food doesn't appear on any snake body or normal food position
             database.ref(`rooms/${gameRoom}/players`).once('value', (playersSnapshot) => {
                 database.ref(`rooms/${gameRoom}/foods`).once('value', (foodsSnapshot) => {
                     const players = playersSnapshot.val() || {};
@@ -1105,20 +1178,20 @@
                     let validPosition = false;
                     
                     while (!validPosition) {
-                        // 使用固定的画布尺寸计算有效游戏区域
+                        // Use fixed canvas dimensions to calculate effective game area
                         const canvasWidth = 1200;
                         const canvasHeight = 960;
-                        const margin = Math.floor(canvasWidth * 0.05); // 60px边距
+                        const margin = Math.floor(canvasWidth * 0.05); // 60px margin
                         const effectiveWidth = canvasWidth - 2 * margin;
                         const effectiveHeight = canvasHeight - 2 * margin;
                         const gridCols = Math.floor(effectiveWidth / gridSize);
                         const gridRows = Math.floor(effectiveHeight / gridSize);
                         
-                        // 生成随机网格坐标（在有效区域内）
+                        // Generate random grid coordinates (within effective area)
                         const gridX = Math.floor(Math.random() * gridCols);
                         const gridY = Math.floor(Math.random() * gridRows);
                         
-                        // 转换为像素坐标（加上边距偏移）
+                        // Convert to pixel coordinates (add margin offset)
                         const pixelX = margin + gridX * gridSize;
                         const pixelY = margin + gridY * gridSize;
                         
@@ -1128,12 +1201,12 @@
                             color: '#FFFFFF',
                             meme: '✨',
                             timestamp: Date.now(),
-                            timer: 50 // 存在50个游戏帧
+                            timer: 50 // Exists for 50 game frames
                         };
                         
                         validPosition = true;
                         
-                        // 检查是否与普通食物重叠
+                        // Check if overlaps with normal food
                         currentFoods.forEach(food => {
                             if (food.x === newFood.x && food.y === newFood.y) {
                                 validPosition = false;
@@ -1142,7 +1215,7 @@
                         
                         if (!validPosition) continue;
                         
-                        // 检查是否与尸体食物重叠
+                        // Check if overlaps with corpse food
                         if (corpseFoods && corpseFoods.length > 0) {
                             corpseFoods.forEach(corpseFood => {
                                 if (corpseFood.x === newFood.x && corpseFood.y === newFood.y) {
@@ -1153,7 +1226,7 @@
                         
                         if (!validPosition) continue;
                         
-                        // 检查是否与当前玩家蛇身重叠
+                        // Check if overlaps with current player snake body
                         for (let segment of snake) {
                             if (segment.x === newFood.x && segment.y === newFood.y) {
                                 validPosition = false;
@@ -1163,7 +1236,7 @@
                         
                         if (!validPosition) continue;
                         
-                        // 检查是否与其他玩家蛇身重叠
+                        // Check if overlaps with other player snake bodies
                         Object.values(players).forEach(player => {
                             if (player.snake && player.alive) {
                                 for (let segment of player.snake) {
@@ -1177,10 +1250,10 @@
                         });
                     }
                     
-                    // 保存特殊食物到Firebase
+                    // Save special food to Firebase
                     database.ref(`rooms/${gameRoom}/specialFood`).set(newFood);
                     
-                    // 5秒后移除特殊食物
+                    // Remove special food after 5 seconds
                     setTimeout(() => {
                         database.ref(`rooms/${gameRoom}/specialFood`).once('value', (snapshot) => {
                             if (snapshot.exists() && snapshot.val().timestamp === newFood.timestamp) {
@@ -1192,18 +1265,18 @@
             });
         }
         
-        // 更新分数
+                // Update score
         function updateScore() {
             scoreElement.textContent = score;
             finalScoreElement.textContent = score;
             
-            // 更新Firebase中的分数
+            // Update score in Firebase
             if (playerId) {
                 database.ref(`rooms/${gameRoom}/players/${playerId}`).update({
                     score: score
                 });
                 
-                // 同时更新用户钱包下的总积分
+                // Also update total points under user wallet
                 database.ref(`users/${playerWallet}`).update({
                     score: score,
                     lastUpdated: Date.now()
@@ -1211,25 +1284,25 @@
             }
         }
         
-                         // 检查碰撞
+        // Check collision
         function checkCollision() {
             const head = snake[0];
-            const gridSize = 15; // 固定网格大小
+            const gridSize = 15; // Fixed grid size
             
-            // 检查墙壁碰撞（考虑边距）
+            // Check wall collision (considering margin)
             if (head.x < gameMargin || head.x >= canvas.width - gameMargin || 
                 head.y < gameMargin || head.y >= canvas.height - gameMargin) {
                 return true;
             }
             
-            // 检查自身碰撞
+            // Check self collision
             for (let i = 1; i < snake.length; i++) {
                 if (head.x === snake[i].x && head.y === snake[i].y) {
                     return true;
                 }
             }
             
-            // 检查与其他玩家碰撞（包括死亡玩家的蛇身体）
+            // Check collision with other players (including dead player snake bodies)
             Object.values(otherPlayers).forEach(player => {
                 if (player.snake) {
                     for (let segment of player.snake) {
@@ -1243,38 +1316,43 @@
             return false;
         }
         
-        // 检查食物碰撞
+        // Check food collision
         function checkFoodCollision() {
             const head = snake[0];
-            const gridSize = 15; // 固定网格大小
+            const gridSize = 15; // Fixed grid size
             let ateFood = false;
             
-            // 检查普通食物碰撞
+            // Check normal food collision
             if (foods && foods.length > 0) {
                 for (let i = 0; i < foods.length; i++) {
                     const food = foods[i];
                     
-                    // 调试信息：显示蛇头和食物的坐标
-                    console.log('碰撞检测:', {
+                    // Debug info: show snake head and food coordinates
+                    console.log('Collision detection:', {
                         head: {x: head.x, y: head.y},
                         food: {x: food.x, y: food.y},
                         gridSize: gridSize,
                         distance: Math.sqrt(Math.pow(head.x - food.x, 2) + Math.pow(head.y - food.y, 2))
                     });
                     
-                    // 使用更宽松的碰撞检测
+                    // Use more lenient collision detection
                     if (Math.abs(head.x - food.x) < gridSize/2 && Math.abs(head.y - food.y) < gridSize/2) {
-                        console.log('吃到普通食物!', {head, food}); // 调试信息
+                        console.log('Ate normal food!', {head, food}); // Debug info
                         
-                        // 增加分数
-                        score += 10;
+                        // Calculate base score and bonus
+                        let baseScore = 10;
+                        let bonusScore = Math.floor(baseScore * (inviteData.inviteBonus || 0) / 100);
+                        let totalScore = baseScore + bonusScore;
                         
-                        // 每100分升级
+                        // Increase score
+                        score += totalScore;
+                        
+                        // Level up every 100 points
                         if (score % 100 === 0) {
                             level++;
-                            // 加快游戏速度，最低50ms
+                            // Speed up game, minimum 50ms
                             gameSpeed = Math.max(50, gameSpeed - 10);
-                            // 重新设置游戏循环速度
+                            // Reset game loop speed
                             if (isGameRunning && !isPaused) {
                                 clearInterval(gameLoop);
                                 gameLoop = setInterval(gameUpdate, gameSpeed);
@@ -1283,62 +1361,72 @@
                         
                         updateScore();
                         
-                        // 移除被吃掉的食物
+                        // Remove eaten food
                         const updatedFoods = foods.filter((_, index) => index !== i);
                         database.ref(`rooms/${gameRoom}/foods`).set(updatedFoods);
                         
-                        // 播放吃食物音效
+                        // Play eat sound effect
                         playEatSound();
                         
-                        // 生成新食物
+                        // Generate new food
                         generateFood();
                         
-                        // 有10%的几率生成特殊食物
+                        // 10% chance to generate special food
                         if (Math.random() < 0.1) {
                             generateSpecialFood();
                         }
                         
                         ateFood = true;
-                        break; // 一次只能吃一个食物
+                        break; // Can only eat one food at a time
                     }
                 }
             }
             
-            // 检查尸体食物碰撞
+            // Check corpse food collision
             if (corpseFoods && corpseFoods.length > 0) {
                 for (let i = 0; i < corpseFoods.length; i++) {
                     const corpseFood = corpseFoods[i];
                     
-                    // 使用更宽松的碰撞检测
+                    // Use more lenient collision detection
                     if (Math.abs(head.x - corpseFood.x) < gridSize/2 && Math.abs(head.y - corpseFood.y) < gridSize/2) {
-                        console.log('吃到尸体食物!', {head, corpseFood}); // 调试信息
+                        console.log('Ate corpse food!', {head, corpseFood}); // Debug info
                         
-                        // 播放吃食物音效
+                        // Play eat sound effect
                         playEatSound();
                         
-                        // 尸体食物只加分数，不增加蛇长度
-                        score += 5;
+                        // Calculate corpse food score and bonus
+                        let baseScore = 5;
+                        let bonusScore = Math.floor(baseScore * (inviteData.inviteBonus || 0) / 100);
+                        let totalScore = baseScore + bonusScore;
+                        
+                        // Corpse food only adds score, doesn't increase snake length
+                        score += totalScore;
                         updateScore();
                         
-                        // 移除被吃掉的尸体食物
+                        // Remove eaten corpse food
                         const updatedCorpseFoods = corpseFoods.filter((_, index) => index !== i);
                         database.ref(`rooms/${gameRoom}/corpseFoods`).set(updatedCorpseFoods);
                         
-                        // 注意：不吃尸体食物，所以不设置ateFood = true
-                        break; // 一次只能吃一个食物
+                        // Note: Don't eat corpse food, so don't set ateFood = true
+                        break; // Can only eat one food at a time
                     }
                 }
             }
             
-            // 特殊食物 - 使用更宽松的碰撞检测
+            // Special food - use more lenient collision detection
             if (specialFood && Math.abs(head.x - specialFood.x) < gridSize/2 && Math.abs(head.y - specialFood.y) < gridSize/2) {
-                console.log('吃到特殊食物!', {head, specialFood}); // 调试信息
+                console.log('Ate special food!', {head, specialFood}); // Debug info
                 
-                // 播放吃食物音效
+                // Play eat sound effect
                 playEatSound();
                 
-                // 特殊食物给更多分数
-                score += 50;
+                // Calculate special food score and bonus
+                let baseScore = 50;
+                let bonusScore = Math.floor(baseScore * (inviteData.inviteBonus || 0) / 100);
+                let totalScore = baseScore + bonusScore;
+                
+                // Special food gives more score
+                score += totalScore;
                 updateScore();
                 database.ref(`rooms/${gameRoom}/specialFood`).remove();
                 ateFood = true;
@@ -1347,17 +1435,17 @@
             return ateFood;
         }
         
-        // 更新游戏状态
+                // Update game state
         function gameUpdate() {
             if (isPaused || !isGameRunning) return;
             
-                                     // 更新方向
+            // Update direction
             direction = nextDirection;
             
-            const gridSize = 15; // 固定网格大小
+            const gridSize = 15; // Fixed grid size
             const head = { x: snake[0].x, y: snake[0].y };
             
-            // 根据方向移动蛇头
+            // Move snake head according to direction
             switch (direction) {
                 case 'up':
                     head.y -= gridSize;
@@ -1373,24 +1461,24 @@
                     break;
             }
             
-            // 将新头部添加到蛇
+            // Add new head to snake
             snake.unshift(head);
             
-            // 检查是否吃到食物
+            // Check if food was eaten
             const ateFood = checkFoodCollision();
             
-            // 如果没吃到食物，移除尾部
+            // If no food was eaten, remove tail
             if (!ateFood) {
                 snake.pop();
             }
             
-            // 检查碰撞
+            // Check collision
             if (checkCollision()) {
                 gameOver();
                 return;
             }
             
-            // 更新Firebase中的蛇状态
+            // Update snake state in Firebase
             if (playerId) {
                 database.ref(`rooms/${gameRoom}/players/${playerId}`).update({
                     snake: snake,
@@ -1398,570 +1486,589 @@
                 });
             }
             
-            // 绘制游戏
+            // Draw game
             draw();
         }
         
-                         // 绘制游戏
+        // Draw game
         function draw() {
-            const gridSize = 15; // 固定网格大小
+            const gridSize = 15; // Fixed grid size
             
-            // 清空画布
+            // Clear canvas
             ctx.fillStyle = '#121212';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // 绘制边距区域（包边）
-            ctx.fillStyle = '#1a1a1a';
-            ctx.fillRect(0, 0, canvas.width, gameMargin); // 上边距
-            ctx.fillRect(0, canvas.height - gameMargin, canvas.width, gameMargin); // 下边距
-            ctx.fillRect(0, 0, gameMargin, canvas.height); // 左边距
-            ctx.fillRect(canvas.width - gameMargin, 0, gameMargin, canvas.height); // 右边距
+            // Draw background image
+            const bgImage = new Image();
+            bgImage.onload = function() {
+                // Draw background image to cover the entire canvas
+                ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+                
+                // Continue with the rest of the drawing after background is loaded
+                drawGameElements();
+            };
+            bgImage.onerror = function() {
+                // If image fails to load, continue without background
+                console.log('Background image failed to load, using default background');
+                drawGameElements();
+            };
+            bgImage.src = '1.jpg';
             
-            // 绘制网格背景（仅在有效游戏区域内）
-            ctx.strokeStyle = '#333333';
-            ctx.lineWidth = 1;
-            
-            // 只在有效游戏区域内绘制网格
-            for (let x = gameMargin; x < canvas.width - gameMargin; x += gridSize) {
-                ctx.beginPath();
-                ctx.moveTo(x, gameMargin);
-                ctx.lineTo(x, canvas.height - gameMargin);
-                ctx.stroke();
-            }
-            
-            for (let y = gameMargin; y < canvas.height - gameMargin; y += gridSize) {
-                ctx.beginPath();
-                ctx.moveTo(gameMargin, y);
-                ctx.lineTo(canvas.width - gameMargin, y);
-                ctx.stroke();
-            }
-            
-            // 绘制其他玩家的蛇
-            Object.values(otherPlayers).forEach(player => {
-                if (player.snake) {
-                    player.snake.forEach((segment, index) => {
-                        // 蛇头（简化显示）
-                        if (index === 0) {
-                            
-                            // 绘制蛇头图片（正方形）
-                            if (snakeHeadImage && snakeHeadImage.complete) {
-                                ctx.save();
-                                ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+            // Draw game elements function
+            function drawGameElements() {
+                // Draw margin area (border)
+                ctx.fillStyle = '#1a1a1a';
+                ctx.fillRect(0, 0, canvas.width, gameMargin); // Top margin
+                ctx.fillRect(0, canvas.height - gameMargin, canvas.width, gameMargin); // Bottom margin
+                ctx.fillRect(0, 0, gameMargin, canvas.height); // Left margin
+                ctx.fillRect(canvas.width - gameMargin, 0, gameMargin, canvas.height); // Right margin
+                
+                // Draw grid background (only in effective game area)
+                // ctx.strokeStyle = '#333333';
+                // ctx.lineWidth = 1;
+                
+                // Only draw grid in effective game area
+                // for (let x = gameMargin; x < canvas.width - gameMargin; x += gridSize) {
+                //     ctx.beginPath();
+                //     ctx.moveTo(x, gameMargin);
+                //     ctx.lineTo(x, canvas.height - gameMargin);
+                //     ctx.stroke();
+                // }
+                
+                // for (let y = gameMargin; y < canvas.height - gameMargin; y += gridSize) {
+                //     ctx.beginPath();
+                //     ctx.moveTo(gameMargin, y);
+                //     ctx.lineTo(canvas.width - gameMargin, y);
+                //     ctx.stroke();
+                // }
+                
+                // Draw other players' snakes
+                Object.values(otherPlayers).forEach(player => {
+                    if (player.snake) {
+                        player.snake.forEach((segment, index) => {
+                            // Snake head (simplified display)
+                            if (index === 0) {
                                 
-                                // 根据方向旋转图片
-                                let rotation = 0;
-                                switch (player.direction || 'right') {
-                                    case 'up': rotation = -Math.PI / 2; break;
-                                    case 'down': rotation = Math.PI / 2; break;
-                                    case 'left': rotation = Math.PI; break;
-                                    case 'right': rotation = 0; break;
-                                }
-                                ctx.rotate(rotation);
-                                
-                                // 添加水平翻转来修复上下颠倒问题
-                                ctx.scale(1, -1);
-                                ctx.drawImage(snakeHeadImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
-                                ctx.restore();
-                            } else {
-                                // 如果图片未加载，使用默认表情
-                                ctx.fillStyle = 'white';
-                                ctx.font = `${gridSize * 0.7}px "Comic Sans MS", cursive`;
-                                ctx.textAlign = 'center';
-                                ctx.textBaseline = 'middle';
-                                ctx.fillText('😜', segment.x + gridSize / 2, segment.y + gridSize / 2);
-                            }
-                            
-                            // 玩家名称标签
-                            ctx.fillStyle = player.color;
-                            ctx.font = `${gridSize * 0.4}px "Comic Sans MS", cursive`;
-                            ctx.fillText(player.name, segment.x + gridSize / 2, segment.y - 10);
-                        } else if (index === player.snake.length - 1) {
-                            // 蛇尾（最后一个位置）
-                            if (snakeTailImage && snakeTailImage.complete) {
-                                ctx.save();
-                                ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
-                                
-                                // 计算蛇尾的方向（基于倒数第二个位置）
-                                let tailDirection = 'right';
-                                if (player.snake.length > 1) {
-                                    const secondLast = player.snake[player.snake.length - 2];
-                                    const last = player.snake[player.snake.length - 1];
+                                // Draw snake head image (square)
+                                if (snakeHeadImage && snakeHeadImage.complete) {
+                                    ctx.save();
+                                    ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
                                     
-                                    if (last.x > secondLast.x) tailDirection = 'right';
-                                    else if (last.x < secondLast.x) tailDirection = 'left';
-                                    else if (last.y > secondLast.y) tailDirection = 'down';
-                                    else if (last.y < secondLast.y) tailDirection = 'up';
-                                }
-                                
-                                                        // 根据方向旋转图片（尾巴根部正确方向）
-                        let rotation = 0;
-                        switch (tailDirection) {
-                            case 'up': rotation = -Math.PI / 2; break;   // 向上：-90度
-                            case 'down': rotation = Math.PI / 2; break;  // 向下：90度
-                            case 'left': rotation = Math.PI; break;      // 向左：180度
-                            case 'right': rotation = 0; break;           // 向右：0度
-                        }
-                                ctx.rotate(rotation);
-                                
-                                // 创建圆形裁剪区域
-                                ctx.beginPath();
-                                ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
-                                ctx.clip();
-                                
-                                ctx.drawImage(snakeTailImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
-                                ctx.restore();
-                            } else {
-                                // 如果图片未加载，使用默认圆形
-                                ctx.fillStyle = player.color;
-                                ctx.beginPath();
-                                ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
-                                ctx.fill();
-                            }
-                        } else {
-                                                        // 蛇身
-                            if (snakeBodyImage && snakeBodyImage.complete) {
-                                // 计算蛇身的方向（基于前后两个位置）
-                                let bodyDirection = 'right';
-                                let isCorner = false;
-                                
-                                if (index > 0 && index < player.snake.length - 1) {
-                                    const prev = player.snake[index - 1];
-                                    const next = player.snake[index + 1];
-                                    
-                                    // 检查是否是拐弯点（前后位置形成直角）
-                                    isCorner = (prev.x !== next.x) && (prev.y !== next.y);
-                                    
-                                    if (isCorner) {
-                                        // 拐弯点：根据当前段与前一段的相对位置确定方向
-                                        const current = player.snake[index];
-                                        if (current.x > prev.x) bodyDirection = 'right';
-                                        else if (current.x < prev.x) bodyDirection = 'left';
-                                        else if (current.y > prev.y) bodyDirection = 'down';
-                                        else if (current.y < prev.y) bodyDirection = 'up';
-                                    } else {
-                                        // 直线段：使用前后位置计算方向
-                                        if (next.x > prev.x) bodyDirection = 'right';
-                                        else if (next.x < prev.x) bodyDirection = 'left';
-                                        else if (next.y > prev.y) bodyDirection = 'down';
-                                        else if (next.y < prev.y) bodyDirection = 'up';
-                                    }
-                                } else if (index === 0) {
-                                    // 头部后的第一节，使用头部方向
-                                    bodyDirection = player.direction || 'right';
-                                } else {
-                                    // 尾部前的最后一节，使用尾部方向
-                                    const secondLast = player.snake[player.snake.length - 2];
-                                    const last = player.snake[player.snake.length - 1];
-                                    
-                                    if (last.x > secondLast.x) bodyDirection = 'right';
-                                    else if (last.x < secondLast.x) bodyDirection = 'left';
-                                    else if (last.y > secondLast.y) bodyDirection = 'down';
-                                    else if (last.y < secondLast.y) bodyDirection = 'up';
-                                }
-                                
-                                if (isCorner) {
-                                    // 转弯点：使用专用转弯图片
-                                    const prev = player.snake[index - 1];
-                                    const next = player.snake[index + 1];
-                                    const current = segment;
-                                    
-                                    // 计算转弯方向
-                                    const fromDirection = {
-                                        x: current.x - prev.x,
-                                        y: current.y - prev.y
-                                    };
-                                    const toDirection = {
-                                        x: next.x - current.x,
-                                        y: next.y - current.y
-                                    };
-                                    
-                                    let turnImage = null;
+                                    // Rotate image according to direction
                                     let rotation = 0;
-                                    
-                                    // 判断转弯类型并选择对应图片
-                                    if ((fromDirection.x === -15 && toDirection.y === 15) || (fromDirection.y === -15 && toDirection.x === 15)) {
-                                        // 右下转弯：从左到下 或 从上到右
-                                        turnImage = snakeTurnEImage;
-                                        rotation = 0;
-                                    } else if ((fromDirection.x === 15 && toDirection.y === 15) || (fromDirection.y === -15 && toDirection.x === -15)) {
-                                        // 左下转弯：从右到下 或 从上到左
-                                        turnImage = snakeTurnQImage;
-                                        rotation = 0;
-                                    } else if ((fromDirection.x === 15 && toDirection.y === -15) || (fromDirection.y === 15 && toDirection.x === -15)) {
-                                        // 左上转弯：从右到上 或 从下到左
-                                        turnImage = snakeTurnRImage;
-                                        rotation = 0;
-                                    } else if ((fromDirection.x === -15 && toDirection.y === -15) || (fromDirection.y === 15 && toDirection.x === 15)) {
-                                        // 右上转弯：从左到上 或 从下到右
-                                        turnImage = snakeTurnWImage;
-                                        rotation = 0;
-                                    }
-                                    
-                                    if (turnImage && turnImage.complete) {
-                                        ctx.save();
-                                        ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
-                                        ctx.rotate(rotation);
-                                        ctx.drawImage(turnImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
-                                        ctx.restore();
-                                    } else {
-                                        // 转弯图片未加载，使用普通蛇身图片
-                                        ctx.save();
-                                        ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
-                                        ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
-                                        ctx.restore();
-                                    }
-                                } else {
-                                    // 直线段：使用普通蛇身图片
-                                    let rotation = 0;
-                                    switch (bodyDirection) {
+                                    switch (player.direction || 'right') {
                                         case 'up': rotation = -Math.PI / 2; break;
                                         case 'down': rotation = Math.PI / 2; break;
                                         case 'left': rotation = Math.PI; break;
                                         case 'right': rotation = 0; break;
                                     }
+                                    ctx.rotate(rotation);
                                     
+                                    // Add horizontal flip to fix upside-down issue
+                                    ctx.scale(1, -1);
+                                    ctx.drawImage(snakeHeadImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                    ctx.restore();
+                                } else {
+                                    // If image not loaded, use default emoji
+                                    ctx.fillStyle = 'white';
+                                    ctx.font = `${gridSize * 0.7}px "Comic Sans MS", cursive`;
+                                    ctx.textAlign = 'center';
+                                    ctx.textBaseline = 'middle';
+                                    ctx.fillText('😜', segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                }
+                                
+                                // Player name label
+                                ctx.fillStyle = player.color;
+                                ctx.font = `${gridSize * 0.4}px "Comic Sans MS", cursive`;
+                                ctx.fillText(player.name, segment.x + gridSize / 2, segment.y - 10);
+                            } else if (index === player.snake.length - 1) {
+                                // Snake tail (last position)
+                                if (snakeTailImage && snakeTailImage.complete) {
                                     ctx.save();
                                     ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                    
+                                    // Calculate tail direction (based on second-to-last position)
+                                    let tailDirection = 'right';
+                                    if (player.snake.length > 1) {
+                                        const secondLast = player.snake[player.snake.length - 2];
+                                        const last = player.snake[player.snake.length - 1];
+                                        
+                                        if (last.x > secondLast.x) tailDirection = 'right';
+                                        else if (last.x < secondLast.x) tailDirection = 'left';
+                                        else if (last.y > secondLast.y) tailDirection = 'down';
+                                        else if (last.y < secondLast.y) tailDirection = 'up';
+                                    }
+                                    
+                                    // Rotate image according to direction (correct tail root direction)
+                                    let rotation = 0;
+                                    switch (tailDirection) {
+                                        case 'up': rotation = -Math.PI / 2; break;   // Up: -90 degrees
+                                        case 'down': rotation = Math.PI / 2; break;  // Down: 90 degrees
+                                        case 'left': rotation = Math.PI; break;      // Left: 180 degrees
+                                        case 'right': rotation = 0; break;           // Right: 0 degrees
+                                    }
                                     ctx.rotate(rotation);
-                                    ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                    
+                                    // Create circular clipping area
+                                    ctx.beginPath();
+                                    ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
+                                    ctx.clip();
+                                    
+                                    ctx.drawImage(snakeTailImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
                                     ctx.restore();
+                                } else {
+                                    // If image not loaded, use default circle
+                                    ctx.fillStyle = player.color;
+                                    ctx.beginPath();
+                                    ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
+                                    ctx.fill();
                                 }
                             } else {
-                                // 如果图片未加载，使用默认圆形
-                                ctx.fillStyle = player.color;
-                                ctx.beginPath();
-                                ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
-                                ctx.fill();
+                                // Snake body
+                                if (snakeBodyImage && snakeBodyImage.complete) {
+                                    // Calculate body direction (based on front and back positions)
+                                    let bodyDirection = 'right';
+                                    let isCorner = false;
+                                    
+                                    if (index > 0 && index < player.snake.length - 1) {
+                                        const prev = player.snake[index - 1];
+                                        const next = player.snake[index + 1];
+                                        
+                                        // Check if it's a corner point (front and back positions form right angle)
+                                        isCorner = (prev.x !== next.x) && (prev.y !== next.y);
+                                        
+                                        if (isCorner) {
+                                            // Corner point: determine direction based on current segment's relative position to previous segment
+                                            const current = player.snake[index];
+                                            if (current.x > prev.x) bodyDirection = 'right';
+                                            else if (current.x < prev.x) bodyDirection = 'left';
+                                            else if (current.y > prev.y) bodyDirection = 'down';
+                                            else if (current.y < prev.y) bodyDirection = 'up';
+                                        } else {
+                                            // Straight segment: use front and back positions to calculate direction
+                                            if (next.x > prev.x) bodyDirection = 'right';
+                                            else if (next.x < prev.x) bodyDirection = 'left';
+                                            else if (next.y > prev.y) bodyDirection = 'down';
+                                            else if (next.y < prev.y) bodyDirection = 'up';
+                                        }
+                                    } else if (index === 0) {
+                                        // First segment after head, use head direction
+                                        bodyDirection = player.direction || 'right';
+                                    } else {
+                                        // Last segment before tail, use tail direction
+                                        const secondLast = player.snake[player.snake.length - 2];
+                                        const last = player.snake[player.snake.length - 1];
+                                        
+                                        if (last.x > secondLast.x) bodyDirection = 'right';
+                                        else if (last.x < secondLast.x) bodyDirection = 'left';
+                                        else if (last.y > secondLast.y) bodyDirection = 'down';
+                                        else if (last.y < secondLast.y) bodyDirection = 'up';
+                                    }
+                                    
+                                    if (isCorner) {
+                                        // Corner point: use dedicated corner image
+                                        const prev = player.snake[index - 1];
+                                        const next = player.snake[index + 1];
+                                        const current = segment;
+                                        
+                                        // Calculate turn direction
+                                        const fromDirection = {
+                                            x: current.x - prev.x,
+                                            y: current.y - prev.y
+                                        };
+                                        const toDirection = {
+                                            x: next.x - current.x,
+                                            y: next.y - current.y
+                                        };
+                                        
+                                        let turnImage = null;
+                                        let rotation = 0;
+                                        
+                                        // Determine turn type and select corresponding image
+                                        if ((fromDirection.x === -15 && toDirection.y === 15) || (fromDirection.y === -15 && toDirection.x === 15)) {
+                                            // Bottom-right turn: from left to down or from up to right
+                                            turnImage = snakeTurnEImage;
+                                            rotation = 0;
+                                        } else if ((fromDirection.x === 15 && toDirection.y === 15) || (fromDirection.y === -15 && toDirection.x === -15)) {
+                                            // Bottom-left turn: from right to down or from up to left
+                                            turnImage = snakeTurnQImage;
+                                            rotation = 0;
+                                        } else if ((fromDirection.x === 15 && toDirection.y === -15) || (fromDirection.y === 15 && toDirection.x === -15)) {
+                                            // Top-left turn: from right to up or from down to left
+                                            turnImage = snakeTurnRImage;
+                                            rotation = 0;
+                                        } else if ((fromDirection.x === -15 && toDirection.y === -15) || (fromDirection.y === 15 && toDirection.x === 15)) {
+                                            // Top-right turn: from left to up or from down to right
+                                            turnImage = snakeTurnWImage;
+                                            rotation = 0;
+                                        }
+                                        
+                                        if (turnImage && turnImage.complete) {
+                                            ctx.save();
+                                            ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                            ctx.rotate(rotation);
+                                            ctx.drawImage(turnImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                            ctx.restore();
+                                        } else {
+                                            // Corner image not loaded, use normal snake body image
+                                            ctx.save();
+                                            ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                            ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                            ctx.restore();
+                                        }
+                                    } else {
+                                        // Straight segment: use normal snake body image
+                                        let rotation = 0;
+                                        switch (bodyDirection) {
+                                            case 'up': rotation = -Math.PI / 2; break;
+                                            case 'down': rotation = Math.PI / 2; break;
+                                            case 'left': rotation = Math.PI; break;
+                                            case 'right': rotation = 0; break;
+                                        }
+                                        
+                                        ctx.save();
+                                        ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                        ctx.rotate(rotation);
+                                        ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                        ctx.restore();
+                                    }
+                                } else {
+                                    // If image not loaded, use default circle
+                                    ctx.fillStyle = player.color;
+                                    ctx.beginPath();
+                                    ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
+                                    ctx.fill();
+                                }
                             }
-                        }
-                    });
-                }
-            });
-            
-            // 绘制自己的蛇
-            snake.forEach((segment, index) => {
-                // 蛇头（简化显示）
-                if (index === 0) {
-                    
-                    // 绘制蛇头图片（正方形）
-                    if (snakeHeadImage && snakeHeadImage.complete) {
-                        ctx.save();
-                        ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
-                        
-                        // 根据方向旋转图片
-                        let rotation = 0;
-                        switch (direction) {
-                            case 'up': rotation = -Math.PI / 2; break;
-                            case 'down': rotation = Math.PI / 2; break;
-                            case 'left': rotation = Math.PI; break;
-                            case 'right': rotation = 0; break;
-                        }
-                        ctx.rotate(rotation);
-                        
-                        // 添加水平翻转来修复上下颠倒问题
-                        ctx.scale(1, -1);
-                        ctx.drawImage(snakeHeadImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
-                        ctx.restore();
-                    } else {
-                        // 如果图片未加载，使用默认表情
-                        ctx.fillStyle = 'white';
-                        ctx.font = `${gridSize * 0.7}px "Comic Sans MS", cursive`;
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText('😛', segment.x + gridSize / 2, segment.y + gridSize / 2);
+                        });
                     }
-                    
-                    // 自己的名称标签
-                    ctx.fillStyle = '#FF3333';
-                    ctx.font = `${gridSize * 0.4}px "Comic Sans MS", cursive`;
-                    ctx.fillText(playerName, segment.x + gridSize / 2, segment.y - 10);
-                                } else if (index === snake.length - 1) {
-                    // 蛇尾（最后一个位置）
-                    if (snakeTailImage && snakeTailImage.complete) {
-                        ctx.save();
-                        ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                });
+                
+                // Draw own snake
+                snake.forEach((segment, index) => {
+                    // Snake head (simplified display)
+                    if (index === 0) {
                         
-                        // 计算蛇尾的方向（基于倒数第二个位置）
-                        let tailDirection = 'right';
-                        if (snake.length > 1) {
-                            const secondLast = snake[snake.length - 2];
-                            const last = snake[snake.length - 1];
+                        // Draw snake head image (square)
+                        if (snakeHeadImage && snakeHeadImage.complete) {
+                            ctx.save();
+                            ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
                             
-                            if (last.x > secondLast.x) tailDirection = 'right';
-                            else if (last.x < secondLast.x) tailDirection = 'left';
-                            else if (last.y > secondLast.y) tailDirection = 'down';
-                            else if (last.y < secondLast.y) tailDirection = 'up';
-                        }
-                        
-                        // 根据方向旋转图片（尾巴根部正确方向）
-                        let rotation = 0;
-                        switch (tailDirection) {
-                            case 'up': rotation = -Math.PI / 2; break;   // 向上：-90度
-                            case 'down': rotation = Math.PI / 2; break;  // 向下：90度
-                            case 'left': rotation = Math.PI; break;      // 向左：180度
-                            case 'right': rotation = 0; break;           // 向右：0度
-                        }
-                        ctx.rotate(rotation);
-                        
-                        // 创建圆形裁剪区域
-                        ctx.beginPath();
-                        ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
-                        ctx.clip();
-                        
-                        ctx.drawImage(snakeTailImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
-                        ctx.restore();
-                    } else {
-                        // 如果图片未加载，使用默认圆形
-                        const colorIndex = (index % memeColors.length);
-                        ctx.fillStyle = memeColors[colorIndex];
-                        ctx.beginPath();
-                        ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                } else {
-                    // 蛇身
-                    if (snakeBodyImage && snakeBodyImage.complete) {
-                        // 计算蛇身的方向（基于前后两个位置）
-                        let bodyDirection = 'right';
-                        let isCorner = false;
-                        
-                        if (index > 0 && index < snake.length - 1) {
-                            const prev = snake[index - 1];
-                            const next = snake[index + 1];
-                            
-                            // 检查是否是拐弯点（前后位置形成直角）
-                            isCorner = (prev.x !== next.x) && (prev.y !== next.y);
-                            
-                            if (isCorner) {
-                                // 拐弯点：根据当前段与前一段的相对位置确定方向
-                                const current = snake[index];
-                                if (current.x > prev.x) bodyDirection = 'right';
-                                else if (current.x < prev.x) bodyDirection = 'left';
-                                else if (current.y > prev.y) bodyDirection = 'down';
-                                else if (current.y < prev.y) bodyDirection = 'up';
-                            } else {
-                                // 直线段：使用前后位置计算方向
-                                if (next.x > prev.x) bodyDirection = 'right';
-                                else if (next.x < prev.x) bodyDirection = 'left';
-                                else if (next.y > prev.y) bodyDirection = 'down';
-                                else if (next.y < prev.y) bodyDirection = 'up';
-                            }
-                        } else if (index === 0) {
-                            // 头部后的第一节，使用头部方向
-                            bodyDirection = direction;
-                        } else {
-                            // 尾部前的最后一节，使用尾部方向
-                            const secondLast = snake[snake.length - 2];
-                            const last = snake[snake.length - 1];
-                            
-                            if (last.x > secondLast.x) bodyDirection = 'right';
-                            else if (last.x < secondLast.x) bodyDirection = 'left';
-                            else if (last.y > secondLast.y) bodyDirection = 'down';
-                            else if (last.y < secondLast.y) bodyDirection = 'up';
-                        }
-                        
-                        if (isCorner) {
-                            // 转弯点：使用专用转弯图片
-                            const prev = snake[index - 1];
-                            const next = snake[index + 1];
-                            const current = segment;
-                            
-                            // 计算转弯方向
-                            const fromDirection = {
-                                x: current.x - prev.x,
-                                y: current.y - prev.y
-                            };
-                            const toDirection = {
-                                x: next.x - current.x,
-                                y: next.y - current.y
-                            };
-                            
-                            let turnImage = null;
+                            // Rotate image according to direction
                             let rotation = 0;
-                            
-                            // 判断转弯类型并选择对应图片
-                            if ((fromDirection.x === -15 && toDirection.y === 15) || (fromDirection.y === -15 && toDirection.x === 15)) {
-                                // 右下转弯：从左到下 或 从上到右
-                                turnImage = snakeTurnEImage;
-                                rotation = 0;
-                            } else if ((fromDirection.x === 15 && toDirection.y === 15) || (fromDirection.y === -15 && toDirection.x === -15)) {
-                                // 左下转弯：从右到下 或 从上到左
-                                turnImage = snakeTurnQImage;
-                                rotation = 0;
-                            } else if ((fromDirection.x === 15 && toDirection.y === -15) || (fromDirection.y === 15 && toDirection.x === -15)) {
-                                // 左上转弯：从右到上 或 从下到左
-                                turnImage = snakeTurnRImage;
-                                rotation = 0;
-                            } else if ((fromDirection.x === -15 && toDirection.y === -15) || (fromDirection.y === 15 && toDirection.x === 15)) {
-                                // 右上转弯：从左到上 或 从下到右
-                                turnImage = snakeTurnWImage;
-                                rotation = 0;
-                            }
-                            
-                            if (turnImage && turnImage.complete) {
-                                ctx.save();
-                                ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
-                                ctx.rotate(rotation);
-                                ctx.drawImage(turnImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
-                                ctx.restore();
-                            } else {
-                                // 转弯图片未加载，使用普通蛇身图片
-                                ctx.save();
-                                ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
-                                ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
-                                ctx.restore();
-                            }
-                        } else {
-                            // 直线段：使用普通蛇身图片
-                            let rotation = 0;
-                            switch (bodyDirection) {
+                            switch (direction) {
                                 case 'up': rotation = -Math.PI / 2; break;
                                 case 'down': rotation = Math.PI / 2; break;
                                 case 'left': rotation = Math.PI; break;
                                 case 'right': rotation = 0; break;
                             }
+                            ctx.rotate(rotation);
                             
+                            // Add horizontal flip to fix upside-down issue
+                            ctx.scale(1, -1);
+                            ctx.drawImage(snakeHeadImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                            ctx.restore();
+                        } else {
+                            // If image not loaded, use default emoji
+                            ctx.fillStyle = 'white';
+                            ctx.font = `${gridSize * 0.7}px "Comic Sans MS", cursive`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText('😛', segment.x + gridSize / 2, segment.y + gridSize / 2);
+                        }
+                        
+                        // Own name label
+                        ctx.fillStyle = '#FF3333';
+                        ctx.font = `${gridSize * 0.4}px "Comic Sans MS", cursive`;
+                        ctx.fillText(playerName, segment.x + gridSize / 2, segment.y - 10);
+                    } else if (index === snake.length - 1) {
+                        // Snake tail (last position)
+                        if (snakeTailImage && snakeTailImage.complete) {
                             ctx.save();
                             ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                            
+                            // Calculate tail direction (based on second-to-last position)
+                            let tailDirection = 'right';
+                            if (snake.length > 1) {
+                                const secondLast = snake[snake.length - 2];
+                                const last = snake[snake.length - 1];
+                                
+                                if (last.x > secondLast.x) tailDirection = 'right';
+                                else if (last.x < secondLast.x) tailDirection = 'left';
+                                else if (last.y > secondLast.y) tailDirection = 'down';
+                                else if (last.y < secondLast.y) tailDirection = 'up';
+                            }
+                            
+                            // Rotate image according to direction (correct tail root direction)
+                            let rotation = 0;
+                            switch (tailDirection) {
+                                case 'up': rotation = -Math.PI / 2; break;   // Up: -90 degrees
+                                case 'down': rotation = Math.PI / 2; break;  // Down: 90 degrees
+                                case 'left': rotation = Math.PI; break;      // Left: 180 degrees
+                                case 'right': rotation = 0; break;           // Right: 0 degrees
+                            }
                             ctx.rotate(rotation);
-                            ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                            
+                            // Create circular clipping area
+                            ctx.beginPath();
+                            ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
+                            ctx.clip();
+                            
+                            ctx.drawImage(snakeTailImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
                             ctx.restore();
+                        } else {
+                            // If image not loaded, use default circle
+                            const colorIndex = (index % memeColors.length);
+                            ctx.fillStyle = memeColors[colorIndex];
+                            ctx.beginPath();
+                            ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
+                            ctx.fill();
                         }
                     } else {
-                        // 如果图片未加载，使用默认圆形
-                        const colorIndex = (index % memeColors.length);
-                        ctx.fillStyle = memeColors[colorIndex];
-                        ctx.beginPath();
-                        ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
-                        ctx.fill();
+                        // Snake body
+                        if (snakeBodyImage && snakeBodyImage.complete) {
+                            // Calculate body direction (based on front and back positions)
+                            let bodyDirection = 'right';
+                            let isCorner = false;
+                            
+                            if (index > 0 && index < snake.length - 1) {
+                                const prev = snake[index - 1];
+                                const next = snake[index + 1];
+                                
+                                // Check if it's a corner point (front and back positions form right angle)
+                                isCorner = (prev.x !== next.x) && (prev.y !== next.y);
+                                
+                                if (isCorner) {
+                                    // Corner point: determine direction based on current segment's relative position to previous segment
+                                    const current = snake[index];
+                                    if (current.x > prev.x) bodyDirection = 'right';
+                                    else if (current.x < prev.x) bodyDirection = 'left';
+                                    else if (current.y > prev.y) bodyDirection = 'down';
+                                    else if (current.y < prev.y) bodyDirection = 'up';
+                                } else {
+                                    // Straight segment: use front and back positions to calculate direction
+                                    if (next.x > prev.x) bodyDirection = 'right';
+                                    else if (next.x < prev.x) bodyDirection = 'left';
+                                    else if (next.y > prev.y) bodyDirection = 'down';
+                                    else if (next.y < prev.y) bodyDirection = 'up';
+                                }
+                            } else if (index === 0) {
+                                // First segment after head, use head direction
+                                bodyDirection = direction;
+                            } else {
+                                // Last segment before tail, use tail direction
+                                const secondLast = snake[snake.length - 2];
+                                const last = snake[snake.length - 1];
+                                
+                                if (last.x > secondLast.x) bodyDirection = 'right';
+                                else if (last.x < secondLast.x) bodyDirection = 'left';
+                                else if (last.y > secondLast.y) bodyDirection = 'down';
+                                else if (last.y < secondLast.y) bodyDirection = 'up';
+                            }
+                            
+                            if (isCorner) {
+                                // Corner point: use dedicated corner image
+                                const prev = snake[index - 1];
+                                const next = snake[index + 1];
+                                const current = segment;
+                                
+                                // Calculate turn direction
+                                const fromDirection = {
+                                    x: current.x - prev.x,
+                                    y: current.y - prev.y
+                                };
+                                const toDirection = {
+                                    x: next.x - current.x,
+                                    y: next.y - current.y
+                                };
+                                
+                                let turnImage = null;
+                                let rotation = 0;
+                                
+                                // Determine turn type and select corresponding image
+                                if ((fromDirection.x === -15 && toDirection.y === 15) || (fromDirection.y === -15 && toDirection.x === 15)) {
+                                    // Bottom-right turn: from left to down or from up to right
+                                    turnImage = snakeTurnEImage;
+                                    rotation = 0;
+                                } else if ((fromDirection.x === 15 && toDirection.y === 15) || (fromDirection.y === -15 && toDirection.x === -15)) {
+                                    // Bottom-left turn: from right to down or from up to left
+                                    turnImage = snakeTurnQImage;
+                                    rotation = 0;
+                                } else if ((fromDirection.x === 15 && toDirection.y === -15) || (fromDirection.y === 15 && toDirection.x === -15)) {
+                                    // Top-left turn: from right to up or from down to left
+                                    turnImage = snakeTurnRImage;
+                                    rotation = 0;
+                                } else if ((fromDirection.x === -15 && toDirection.y === -15) || (fromDirection.y === 15 && toDirection.x === 15)) {
+                                    // Top-right turn: from left to up or from down to right
+                                    turnImage = snakeTurnWImage;
+                                    rotation = 0;
+                                }
+                                
+                                if (turnImage && turnImage.complete) {
+                                    ctx.save();
+                                    ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                    ctx.rotate(rotation);
+                                    ctx.drawImage(turnImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                    ctx.restore();
+                                } else {
+                                    // Corner image not loaded, use normal snake body image
+                                    ctx.save();
+                                    ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                    ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                    ctx.restore();
+                                }
+                            } else {
+                                // Straight segment: use normal snake body image
+                                let rotation = 0;
+                                switch (bodyDirection) {
+                                    case 'up': rotation = -Math.PI / 2; break;
+                                    case 'down': rotation = Math.PI / 2; break;
+                                    case 'left': rotation = Math.PI; break;
+                                    case 'right': rotation = 0; break;
+                                }
+                                
+                                ctx.save();
+                                ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+                                ctx.rotate(rotation);
+                                ctx.drawImage(snakeBodyImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                                ctx.restore();
+                            }
+                        } else {
+                            // If image not loaded, use default circle
+                            const colorIndex = (index % memeColors.length);
+                            ctx.fillStyle = memeColors[colorIndex];
+                            ctx.beginPath();
+                            ctx.arc(segment.x + gridSize/2, segment.y + gridSize/2, gridSize/2, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
                     }
+                });
+                
+                // Draw normal food
+                if (foods && foods.length > 0) {
+                    foods.forEach(food => {
+                        ctx.fillStyle = food.color;
+                        ctx.shadowColor = food.color;
+                        ctx.shadowBlur = 10;
+                        ctx.beginPath();
+                        ctx.arc(food.x + gridSize / 2, food.y + gridSize / 2, gridSize / 2, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                        
+                        // Draw food image
+                        if (foodImage && foodImage.complete) {
+                            ctx.save();
+                            ctx.translate(food.x + gridSize / 2, food.y + gridSize / 2);
+                            
+                            // Create circular clipping area
+                            ctx.beginPath();
+                            ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
+                            ctx.clip();
+                            
+                            ctx.drawImage(foodImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                            ctx.restore();
+                        } else {
+                            // If image not loaded, use default emoji
+                            ctx.fillStyle = 'black';
+                            ctx.font = `${gridSize * 0.5}px "Comic Sans MS", cursive`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(food.meme, food.x + gridSize / 2, food.y + gridSize / 2);
+                        }
+                    });
                 }
-            });
-            
-                         // 绘制普通食物
-             if (foods && foods.length > 0) {
-                 foods.forEach(food => {
-                     ctx.fillStyle = food.color;
-                     ctx.shadowColor = food.color;
-                     ctx.shadowBlur = 10;
-                     ctx.beginPath();
-                     ctx.arc(food.x + gridSize / 2, food.y + gridSize / 2, gridSize / 2, 0, Math.PI * 2);
-                     ctx.fill();
-                     ctx.shadowBlur = 0;
-                     
-                     // 绘制食物图片
-                     if (foodImage && foodImage.complete) {
-                         ctx.save();
-                         ctx.translate(food.x + gridSize / 2, food.y + gridSize / 2);
-                         
-                         // 创建圆形裁剪区域
-                         ctx.beginPath();
-                         ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
-                         ctx.clip();
-                         
-                         ctx.drawImage(foodImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
-                         ctx.restore();
-                     } else {
-                         // 如果图片未加载，使用默认表情
-                         ctx.fillStyle = 'black';
-                         ctx.font = `${gridSize * 0.5}px "Comic Sans MS", cursive`;
-                         ctx.textAlign = 'center';
-                         ctx.textBaseline = 'middle';
-                         ctx.fillText(food.meme, food.x + gridSize / 2, food.y + gridSize / 2);
-                     }
-                 });
-             }
-            
-                         // 绘制尸体食物
-             if (corpseFoods && corpseFoods.length > 0) {
-                 corpseFoods.forEach(corpseFood => {
-                     // 保存当前上下文
-                     ctx.save();
-                     
-                     // 计算动画效果
-                     const time = Date.now() / 1000;
-                     const pulseScale = 1 + Math.sin(time * (corpseFood.pulse || 2)) * 0.1;
-                     const wiggleOffset = Math.sin(time * 3) * (corpseFood.wiggle || 3);
-                     const rotation = (corpseFood.rotation || 0) + Math.sin(time * 2) * 10;
-                     
-                     // 设置变换
-                     ctx.translate(corpseFood.x + gridSize / 2 + wiggleOffset, corpseFood.y + gridSize / 2);
-                     ctx.rotate(rotation * Math.PI / 180);
-                     ctx.scale(pulseScale, pulseScale);
-                     
-                     // 绘制发光背景
-                     const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, gridSize / 2);
-                     gradient.addColorStop(0, corpseFood.color);
-                     gradient.addColorStop(0.7, corpseFood.color + '80');
-                     gradient.addColorStop(1, 'transparent');
-                     
-                     ctx.fillStyle = gradient;
-                     ctx.shadowColor = corpseFood.color;
-                     ctx.shadowBlur = 20;
-                     ctx.beginPath();
-                     ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
-                     ctx.fill();
-                     
-                     // 绘制边框
-                     ctx.strokeStyle = '#FFFFFF';
-                     ctx.lineWidth = 2;
-                     ctx.beginPath();
-                     ctx.arc(0, 0, gridSize / 2 - 2, 0, Math.PI * 2);
-                     ctx.stroke();
-                     
-                     // 重置阴影
-                     ctx.shadowBlur = 0;
-                     
-                     // 绘制尸体食物图片
-                     if (corpseImage && corpseImage.complete) {
-                         // 创建圆形裁剪区域
-                         ctx.beginPath();
-                         ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
-                         ctx.clip();
-                         
-                         ctx.drawImage(corpseImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
-                     } else {
-                         // 如果图片未加载，使用默认表情
-                         ctx.fillStyle = '#FFFFFF';
-                         ctx.font = `bold ${gridSize * 0.6}px "Comic Sans MS", cursive`;
-                         ctx.textAlign = 'center';
-                         ctx.textBaseline = 'middle';
-                         ctx.fillText(corpseFood.meme, 0, 0);
-                     }
-                     
-                     // 恢复上下文
-                     ctx.restore();
-                 });
-             }
-             
-             // 绘制特殊食物（闪烁效果）
-             if (specialFood) {
-                 // 闪烁效果
-                 const opacity = 0.5 + Math.sin(Date.now() / 100) * 0.5;
-                 
-                 ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-                 ctx.shadowColor = 'white';
-                 ctx.shadowBlur = 20;
-                 
-                 // 旋转动画
-                 ctx.save();
-                 ctx.translate(specialFood.x + gridSize / 2, specialFood.y + gridSize / 2);
-                 ctx.rotate(Date.now() / 500);
-                 
-                 ctx.beginPath();
-                 ctx.rect(-gridSize / 2, -gridSize / 2, gridSize, gridSize);
-                 ctx.fill();
-                 
-                 // 特殊符号
-                 ctx.fillStyle = 'gold';
-                 ctx.font = `${gridSize * 0.7}px "Comic Sans MS", cursive`;
-                 ctx.textAlign = 'center';
-                 ctx.textBaseline = 'middle';
-                 ctx.fillText(specialFood.meme, 0, 0);
-                 
-                 ctx.restore();
-                 ctx.shadowBlur = 0;
-             }
+                
+                // Draw corpse food
+                if (corpseFoods && corpseFoods.length > 0) {
+                    corpseFoods.forEach(corpseFood => {
+                        // Save current context
+                        ctx.save();
+                        
+                        // Calculate animation effects
+                        const time = Date.now() / 1000;
+                        const pulseScale = 1 + Math.sin(time * (corpseFood.pulse || 2)) * 0.1;
+                        const wiggleOffset = Math.sin(time * 3) * (corpseFood.wiggle || 3);
+                        const rotation = (corpseFood.rotation || 0) + Math.sin(time * 2) * 10;
+                        
+                        // Set transformations
+                        ctx.translate(corpseFood.x + gridSize / 2 + wiggleOffset, corpseFood.y + gridSize / 2);
+                        ctx.rotate(rotation * Math.PI / 180);
+                        ctx.scale(pulseScale, pulseScale);
+                        
+                        // Draw glowing background
+                        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, gridSize / 2);
+                        gradient.addColorStop(0, corpseFood.color);
+                        gradient.addColorStop(0.7, corpseFood.color + '80');
+                        gradient.addColorStop(1, 'transparent');
+                        
+                        ctx.fillStyle = gradient;
+                        ctx.shadowColor = corpseFood.color;
+                        ctx.shadowBlur = 20;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Draw border
+                        ctx.strokeStyle = '#FFFFFF';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, gridSize / 2 - 2, 0, Math.PI * 2);
+                        ctx.stroke();
+                        
+                        // Reset shadow
+                        ctx.shadowBlur = 0;
+                        
+                        // Draw corpse food image
+                        if (corpseImage && corpseImage.complete) {
+                            // Create circular clipping area
+                            ctx.beginPath();
+                            ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
+                            ctx.clip();
+                            
+                            ctx.drawImage(corpseImage, -gridSize/2, -gridSize/2, gridSize, gridSize);
+                        } else {
+                            // If image not loaded, use default emoji
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.font = `bold ${gridSize * 0.6}px "Comic Sans MS", cursive`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(corpseFood.meme, 0, 0);
+                        }
+                        
+                        // Restore context
+                        ctx.restore();
+                    });
+                }
+                
+                // Draw special food (blinking effect)
+                if (specialFood) {
+                    // Blinking effect
+                    const opacity = 0.5 + Math.sin(Date.now() / 100) * 0.5;
+                    
+                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                    ctx.shadowColor = 'white';
+                    ctx.shadowBlur = 20;
+                    
+                    // Rotation animation
+                    ctx.save();
+                    ctx.translate(specialFood.x + gridSize / 2, specialFood.y + gridSize / 2);
+                    ctx.rotate(Date.now() / 500);
+                    
+                    ctx.beginPath();
+                    ctx.rect(-gridSize / 2, -gridSize / 2, gridSize, gridSize);
+                    ctx.fill();
+                    
+                    // Special symbol
+                    ctx.fillStyle = 'gold';
+                    ctx.font = `${gridSize * 0.7}px "Comic Sans MS", cursive`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(specialFood.meme, 0, 0);
+                    
+                    ctx.restore();
+                    ctx.shadowBlur = 0;
+                }
+            }
         }
         
         // 开始游戏
@@ -1992,6 +2099,9 @@
             
             // 初始化游戏
             initGame();
+            
+            // 标记为有效用户（如果使用了邀请码）
+            loadInviteDataForGame();
             
             // 检查游戏状态
             database.ref('gameState').once('value', (snapshot) => {
@@ -2225,9 +2335,10 @@
             }
         }
         
-        // 兑换代币
+        // 兑换代币（双重转账：用户95% + 黑洞5%）
         async function claimToken() {
             const walletAddress = document.getElementById('walletAddressInput').value.trim();
+            
             if (!walletAddress) {
                 showClaimResult('Please enter wallet address', 'error');
                 return;
@@ -2236,28 +2347,166 @@
             try {
                 showClaimResult('Processing claim request...', 'info');
                 
-                const result = await claimTokenFunction({ wallet: walletAddress });
+                // 获取用户积分
+                const scoreAmount = parseInt(document.getElementById('totalScore').textContent) || 0;
+                if (scoreAmount <= 0) {
+                    showClaimResult('No points available for claim', 'error');
+                    return;
+                }
                 
-                if (result.data.success) {
+                const totalTokenAmount = scoreAmount * 10; // 1积分 = 10代币
+                const userTokenAmount = Math.floor(totalTokenAmount * 0.95); // 95%给用户
+                const blackholeTokenAmount = totalTokenAmount - userTokenAmount; // 5%给黑洞
+                
+                console.log(`Token distribution plan: Total ${totalTokenAmount}, User ${userTokenAmount}(95%), Blackhole ${blackholeTokenAmount}(5%)`);
+                
+                // Blackhole address (for testing: user-provided valid Solana address)
+                const BLACKHOLE_ADDRESS = '6QHygYqsfancR8uJ4Sez8fugRyUzZQj2KayCyqiLKTPy';
+                
+                showClaimResult('Step 1/2: Transferring tokens to user...', 'info');
+                
+                // Step 1: Transfer to user (95%)
+                // First temporarily set user score to 95% corresponding score
+                const userScore = Math.floor(scoreAmount * 0.95);
+                console.log(`Setting user score: ${walletAddress} -> ${userScore}`);
+                await setUserScore(walletAddress, userScore);
+                
+                console.log(`Calling cloud function claimToken, wallet address: ${walletAddress}`);
+                const userResult = await claimTokenFunction({ wallet: walletAddress });
+                console.log('User transfer complete result:', userResult);
+                
+                if (!userResult || !userResult.data) {
+                    throw new Error('User transfer failed: Cloud function returned empty data');
+                }
+                
+                if (!userResult.data.success) {
+                    throw new Error('User transfer failed: ' + (userResult.data.message || 'Unknown error'));
+                }
+                
+                const userTxHash = userResult.data.tx;
+                console.log(`User transfer successful, transaction hash: ${userTxHash}`);
+                
+                showClaimResult('Step 2/2: Burning tokens to blackhole...', 'info');
+                
+                // Step 2: Transfer to blackhole address (5%)
+                // Set blackhole address score to 5% corresponding score
+                const blackholeScore = scoreAmount - userScore;
+                console.log(`Setting blackhole score: ${BLACKHOLE_ADDRESS} -> ${blackholeScore}`);
+                await setUserScore(BLACKHOLE_ADDRESS, blackholeScore);
+                
+                console.log(`Starting blackhole burn process, amount: ${blackholeScore}`);
+                let blackholeTxHash = '';
+                
+                // Try option 1: Call cloud function for actual transfer
+                try {
+                    console.log(`Calling cloud function claimToken, blackhole address: ${BLACKHOLE_ADDRESS}`);
+                    const blackholeResult = await claimTokenFunction({ wallet: BLACKHOLE_ADDRESS });
+                    console.log('Blackhole transfer complete result:', blackholeResult);
+                    
+                    if (blackholeResult && blackholeResult.data && blackholeResult.data.success) {
+                        blackholeTxHash = blackholeResult.data.tx;
+                        console.log('✅ Blackhole transfer successful, transaction hash:', blackholeTxHash);
+                    } else {
+                        throw new Error('Cloud function returned failure status: ' + (blackholeResult?.data?.message || 'Unknown error'));
+                    }
+                } catch (blackholeError) {
+                    console.warn('❌ Blackhole transfer call failed:', blackholeError.message);
+                    
+                    // Option 2: Record burn (no actual transfer, but record burn information)
+                    console.log('🔄 Enabling backup plan: Record burn');
+                    try {
+                        // Create burn record
+                        const burnRecord = {
+                            userWallet: walletAddress,
+                            burnAmount: blackholeTokenAmount,
+                            burnScore: blackholeScore,
+                            timestamp: Date.now(),
+                            method: 'RECORD_BURN', // Record burn
+                            reason: 'CLOUD_FUNCTION_FAILED'
+                        };
+                        
+                        // Save burn record to database
+                        await database.ref(`burnRecords/${Date.now()}_${walletAddress.substring(0, 8)}`).set(burnRecord);
+                        
+                        // Clear blackhole address score
+                        await setUserScore(BLACKHOLE_ADDRESS, 0);
+                        
+                        blackholeTxHash = 'BURN_RECORDED'; // Mark as record burn
+                        console.log('✅ Burn record saved, score cleared');
+                        
+                    } catch (recordError) {
+                        console.error('❌ Record burn also failed:', recordError);
+                        blackholeTxHash = 'BURN_ERROR';
+                    }
+                }
+                
                     // 隐藏当前弹窗
                     hideClaimRewardModal();
                     
-                    // 获取实际兑换的积分数量
-                    const scoreAmount = parseInt(document.getElementById('totalScore').textContent) || 0;
-                    const tokenAmount = scoreAmount * 10; // 1积分 = 10代币
+                // 构造返回数据
+                const combinedResult = {
+                    success: true,
+                    userTxHash: userTxHash,
+                    blackholeTxHash: blackholeTxHash,
+                    totalTokens: totalTokenAmount,
+                    userTokens: userTokenAmount,
+                    blackholeTokens: blackholeTokenAmount,
+                    message: `Successfully claimed ${totalTokenAmount} tokens. ${userTokenAmount} sent to your wallet, ${blackholeTokenAmount} burned to blackhole.`
+                };
                     
                     // 显示成功弹窗
-                    showSuccessModal(result.data.tx, tokenAmount);
+                showSuccessModal(combinedResult, totalTokenAmount);
                     
                     // 刷新积分显示
                     setTimeout(() => {
                         checkScore();
                     }, 1000);
-                } else {
-                    showClaimResult('Claim failed: ' + (result.data.message || 'Unknown error'), 'error');
-                }
+                
             } catch (error) {
+                console.error('Claim token error:', error);
                 showClaimResult('Claim failed: ' + error.message, 'error');
+            }
+        }
+        
+        // 辅助函数：设置用户积分
+        async function setUserScore(walletAddress, score) {
+            try {
+                console.log(`Starting to set score: ${walletAddress.substring(0, 8)}... -> ${score}`);
+                
+                const userRef = database.ref(`users/${walletAddress}`);
+                await userRef.update({
+                    score: score,
+                    timestamp: Date.now()
+                });
+                
+                // Verify if setting was successful
+                const snapshot = await userRef.once('value');
+                const userData = snapshot.val();
+                console.log(`Score setting successful: ${walletAddress.substring(0, 8)}...`, userData);
+                
+            } catch (error) {
+                console.error('Failed to set user score:', error);
+                throw new Error('Failed to set user score: ' + error.message);
+            }
+        }
+        
+        // 测试云函数连接
+        async function testCloudFunction(walletAddress) {
+            try {
+                console.log('=== Testing cloud function connection ===');
+                console.log(`Test wallet address: ${walletAddress}`);
+                
+                // Set test score
+                await setUserScore(walletAddress, 1);
+                
+                // Call cloud function
+                const result = await claimTokenFunction({ wallet: walletAddress });
+                console.log('Cloud function test result:', result);
+                
+                return result;
+            } catch (error) {
+                console.error('Cloud function test failed:', error);
+                throw error;
             }
         }
         
@@ -2269,24 +2518,83 @@
             resultDiv.classList.remove('hidden');
         }
         
+        // 获取黑洞销毁状态显示
+        function getBurnStatusDisplay(txHash) {
+            if (!txHash) {
+                return `
+                    <div class="text-xs text-yellow-400 break-all font-mono">⚠️ 黑洞转账未执行</div>
+                    <div class="text-xs text-yellow-400 mt-1">注意：代币未实际销毁</div>
+                `;
+            }
+            
+            if (txHash === 'BURN_FAILED') {
+                return `
+                    <div class="text-xs text-orange-400 break-all font-mono">❌ 黑洞转账失败</div>
+                    <div class="text-xs text-orange-400 mt-1">云函数执行失败，但积分已扣除</div>
+                `;
+            }
+            
+            if (txHash === 'BURN_ERROR') {
+                return `
+                    <div class="text-xs text-red-400 break-all font-mono">🚫 黑洞转账错误</div>
+                    <div class="text-xs text-red-400 mt-1">网络错误或地址无效，积分已重置</div>
+                `;
+            }
+            
+            if (txHash === 'BURN_RECORDED') {
+                return `
+                    <div class="text-xs text-blue-400 break-all font-mono">📝 记录式销毁</div>
+                    <div class="text-xs text-blue-400 mt-1">✅ 销毁记录已保存，积分已扣除</div>
+                `;
+            }
+            
+            // 正常的交易哈希
+            return `
+                <div class="text-xs text-red-400 break-all font-mono">${txHash}</div>
+                                            <div class="text-xs text-green-400 mt-1">✅ Token successfully destroyed</div>
+            `;
+        }
+        
         // 显示兑换成功弹窗
-        function showSuccessModal(txHash, amount) {
+        function showSuccessModal(result, amount) {
             // 创建成功弹窗
             const successModal = document.createElement('div');
             successModal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
+            
+            // 计算实际发送给用户的代币数量（95%）
+            const userAmount = Math.floor(amount * 0.95);
+            const blackholeAmount = amount - userAmount;
+            
             successModal.innerHTML = `
                 <div class="bg-gray-800 p-6 rounded-lg border-2 border-memeGreen max-w-md w-full mx-4">
                     <div class="text-center">
                         <div class="text-6xl mb-4">🎉</div>
                         <h3 class="text-2xl font-bold text-memeGreen mb-4">Claim Successful!</h3>
+                        
+                        <!-- 用户获得的代币 -->
                         <div class="mb-4 p-3 bg-gray-700 rounded">
-                            <div class="text-lg font-bold text-memeYellow mb-2">${amount} Tokens</div>
-                            <div class="text-sm text-gray-400">Sent to your wallet</div>
+                            <div class="text-lg font-bold text-memeYellow mb-2">${userAmount} Tokens</div>
+                            <div class="text-sm text-gray-400">Sent to your wallet (95%)</div>
                         </div>
+                        
+                        <!-- 黑洞销毁的代币 -->
+                        <div class="mb-4 p-3 bg-gray-700 rounded border border-red-500">
+                            <div class="text-lg font-bold text-red-400 mb-2">🔥 ${blackholeAmount} Tokens Burned</div>
+                            <div class="text-sm text-gray-400">Sent to blackhole address (5%)</div>
+                        </div>
+                        
+                        <!-- 用户转账哈希 -->
                         <div class="mb-4 p-3 bg-gray-700 rounded text-left">
-                            <div class="text-sm text-gray-400 mb-1">Transaction Hash:</div>
-                            <div class="text-xs text-memeBlue break-all font-mono">${txHash}</div>
+                            <div class="text-sm text-gray-400 mb-1">User Transaction Hash:</div>
+                            <div class="text-xs text-memeBlue break-all font-mono">${result.userTxHash || result.tx || 'N/A'}</div>
                         </div>
+                        
+                        <!-- 黑洞转账哈希 -->
+                        <div class="mb-4 p-3 bg-gray-700 rounded text-left border border-red-500">
+                            <div class="text-sm text-red-400 mb-1">Blackhole Transaction Hash:</div>
+                            ${getBurnStatusDisplay(result.blackholeTxHash || result.blackholeTx)}
+                        </div>
+                        
                         <div class="mb-4 text-sm text-gray-400">
                             You can view transaction details in Solana Explorer
                         </div>
@@ -2456,6 +2764,330 @@
             updateMusicUI();
         }
         
+        // 邀请系统函数
+        function generateInviteCode(walletAddress) {
+            // 使用钱包地址的后8位作为邀请码
+            return walletAddress.slice(-8);
+        }
+        
+        function showInviteModal() {
+            const modal = document.getElementById('inviteModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                loadInviteData();
+                
+                // 隐藏领取奖励弹窗
+                hideClaimRewardModal();
+            }
+        }
+        
+        function closeInviteModal() {
+            const modal = document.getElementById('inviteModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                
+                // 重新显示领取奖励弹窗
+                showClaimRewardModal();
+            }
+        }
+        
+        function loadInviteData() {
+            // Get wallet address from wallet address input field
+            const walletAddressInput = document.getElementById('walletAddressInput');
+            const walletAddress = walletAddressInput.value.trim();
+            
+            if (!walletAddress || walletAddress.length < 8) {
+                // If wallet address is empty or too short, show prompt
+                document.getElementById('myInviteCode').textContent = 'Please enter wallet address first';
+                document.getElementById('invitedCount').textContent = '0';
+                document.getElementById('bonusPercent').textContent = '0%';
+                document.getElementById('inviteStatus').textContent = 'Please enter wallet address in the claim rewards interface first';
+                return;
+            }
+            
+            // Generate invite code
+            inviteData.myInviteCode = generateInviteCode(walletAddress);
+            document.getElementById('myInviteCode').textContent = inviteData.myInviteCode;
+            
+            // Load invite data from database
+            database.ref(`invites/${walletAddress}`).once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    inviteData = { ...inviteData, ...data };
+                } else {
+                    // If no data, initialize default values
+                    inviteData = {
+                        myInviteCode: inviteData.myInviteCode,
+                        invitedBy: null,
+                        invitedUsers: [],
+                        inviteBonus: 0,
+                        hasUsedInviteCode: false,
+                        isValidUser: false
+                    };
+                }
+                updateInviteUI();
+            });
+        }
+        
+        function updateInviteUI() {
+            // Update invite stats
+            document.getElementById('invitedCount').textContent = inviteData.invitedUsers.length;
+            document.getElementById('bonusPercent').textContent = inviteData.inviteBonus + '%';
+            
+            // Update status information
+            const statusEl = document.getElementById('inviteStatus');
+            if (inviteData.hasUsedInviteCode) {
+                if (inviteData.isValidUser) {
+                    statusEl.textContent = `Used invite code: ${inviteData.invitedBy}, already a valid user`;
+                } else {
+                    statusEl.textContent = `Used invite code: ${inviteData.invitedBy}, will become valid user after starting game`;
+                }
+            } else {
+                statusEl.textContent = 'No invite code used yet';
+            }
+            
+            // If already used invite code, disable input field
+            const inviteInput = document.getElementById('inviteCodeInput');
+            const submitBtn = document.getElementById('submitInviteBtn');
+            if (inviteData.hasUsedInviteCode) {
+                inviteInput.disabled = true;
+                inviteInput.placeholder = 'Already used invite code';
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submitted';
+            }
+        }
+        
+        function copyInviteCode() {
+            const inviteCode = inviteData.myInviteCode;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(inviteCode).then(() => {
+                    showMessage('Invite code copied to clipboard!');
+                }).catch(() => {
+                    fallbackCopyTextToClipboard(inviteCode);
+                });
+            } else {
+                fallbackCopyTextToClipboard(inviteCode);
+            }
+        }
+        
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showMessage('Invite code copied to clipboard!');
+            } catch (err) {
+                showMessage('Copy failed, please manually copy the invite code');
+            }
+            document.body.removeChild(textArea);
+        }
+        
+        function submitInviteCode() {
+            const inviteCodeInput = document.getElementById('inviteCodeInput');
+            const inviteCode = inviteCodeInput.value.trim().toUpperCase();
+            
+            // Get wallet address from wallet address input field
+            const walletAddressInput = document.getElementById('walletAddressInput');
+            const walletAddress = walletAddressInput.value.trim();
+            
+            if (!walletAddress || walletAddress.length < 8) {
+                showMessage('Please enter wallet address in the claim rewards interface first');
+                return;
+            }
+            
+            if (!inviteCode) {
+                showMessage('Please enter invite code');
+                return;
+            }
+            
+            if (inviteCode.length !== 8) {
+                showMessage('Invite code must be 8 digits');
+                return;
+            }
+            
+            if (inviteCode === inviteData.myInviteCode) {
+                showMessage('Cannot use your own invite code');
+                return;
+            }
+            
+            if (inviteData.hasUsedInviteCode) {
+                showMessage('Already used an invite code');
+                return;
+            }
+            
+            // Find inviter
+            database.ref('players').orderByChild('wallet').once('value', (snapshot) => {
+                let inviterFound = false;
+                let inviterWallet = '';
+                
+                snapshot.forEach((childSnapshot) => {
+                    const playerData = childSnapshot.val();
+                    if (playerData.wallet && generateInviteCode(playerData.wallet) === inviteCode) {
+                        inviterFound = true;
+                        inviterWallet = playerData.wallet;
+                        return true; // break
+                    }
+                });
+                
+                if (inviterFound) {
+                    // Check inviter's invite limit
+                    database.ref(`invites/${inviterWallet}`).once('value', (inviterSnapshot) => {
+                        const inviterData = inviterSnapshot.val() || { invitedUsers: [] };
+                        
+                        if (inviterData.invitedUsers.length >= 30) {
+                            showMessage('This invite code has reached the invite limit');
+                            return;
+                        }
+                        
+                        // Record invite relationship
+                        inviteData.invitedBy = inviteCode;
+                        inviteData.hasUsedInviteCode = true;
+                        
+                        // Save to database
+                        database.ref(`invites/${walletAddress}`).set(inviteData);
+                        
+                        // Update inviter's data
+                        inviterData.invitedUsers.push(walletAddress);
+                        inviterData.inviteBonus = Math.min(inviterData.invitedUsers.length * 10, 300); // Max 300% bonus
+                        database.ref(`invites/${inviterWallet}`).set(inviterData);
+                        
+                        showMessage('Invite code submitted successfully! You will become a valid user after starting the game');
+                        updateInviteUI();
+                    });
+                } else {
+                    showMessage('Invalid invite code');
+                }
+            });
+        }
+        
+        function showMessage(message) {
+            // 简单的消息显示，可以后续改进为更好的UI
+            alert(message);
+        }
+        
+        function loadInviteDataForGame() {
+            // Get wallet address from wallet address input field
+            const walletAddressInput = document.getElementById('walletAddressInput');
+            const walletAddress = walletAddressInput.value.trim();
+            
+            if (!walletAddress || walletAddress.length < 8) {
+                return;
+            }
+            
+            // Load invite data from database
+            database.ref(`invites/${walletAddress}`).once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    inviteData = { ...inviteData, ...data };
+                    
+                    // If used invite code but not yet a valid user, mark as valid user
+                    if (data.hasUsedInviteCode && !data.isValidUser) {
+                        inviteData.isValidUser = true;
+                        database.ref(`invites/${walletAddress}`).set(inviteData);
+                        
+                        // Update inviter's bonus
+                        updateInviterBonus(data.invitedBy, walletAddress);
+                    }
+                }
+            });
+        }
+        
+        function updateInviterBonus(inviteCode, userWallet) {
+            if (!inviteCode) return;
+            
+            // Find inviter wallet address
+            database.ref('players').orderByChild('wallet').once('value', (snapshot) => {
+                snapshot.forEach((childSnapshot) => {
+                    const playerData = childSnapshot.val();
+                    if (playerData.wallet && generateInviteCode(playerData.wallet) === inviteCode) {
+                        const inviterWallet = playerData.wallet;
+                        
+                        // Update inviter's bonus
+                        database.ref(`invites/${inviterWallet}`).once('value', (inviterSnapshot) => {
+                            const inviterData = inviterSnapshot.val() || { invitedUsers: [] };
+                            
+                            // Calculate valid user count
+                            let validUserCount = 0;
+                            const promises = inviterData.invitedUsers.map(userWallet => {
+                                return database.ref(`invites/${userWallet}`).once('value');
+                            });
+                            
+                            Promise.all(promises).then(snapshots => {
+                                snapshots.forEach(userSnapshot => {
+                                    const userData = userSnapshot.val();
+                                    if (userData && userData.isValidUser) {
+                                        validUserCount++;
+                                    }
+                                });
+                                
+                                // Update inviter's bonus (10% per valid user, max 300%)
+                                inviterData.inviteBonus = Math.min(validUserCount * 10, 300);
+                                database.ref(`invites/${inviterWallet}`).set(inviterData);
+                            });
+                        });
+                        
+                        return true; // break
+                    }
+                });
+            });
+        }
+        
+        function markAsValidUser() {
+            // Get wallet address from wallet address input field
+            const walletAddressInput = document.getElementById('walletAddressInput');
+            const walletAddress = walletAddressInput.value.trim();
+            
+            if (!walletAddress || !inviteData.hasUsedInviteCode || inviteData.isValidUser) {
+                return;
+            }
+            
+            // Mark as valid user
+            inviteData.isValidUser = true;
+            database.ref(`invites/${walletAddress}`).set(inviteData);
+            
+            // If there's an inviter, update inviter's bonus
+            if (inviteData.invitedBy) {
+                // Find inviter wallet address
+                database.ref('players').orderByChild('wallet').once('value', (snapshot) => {
+                    snapshot.forEach((childSnapshot) => {
+                        const playerData = childSnapshot.val();
+                        if (playerData.wallet && generateInviteCode(playerData.wallet) === inviteData.invitedBy) {
+                            const inviterWallet = playerData.wallet;
+                            
+                            // Update inviter's bonus
+                            database.ref(`invites/${inviterWallet}`).once('value', (inviterSnapshot) => {
+                                const inviterData = inviterSnapshot.val() || { invitedUsers: [] };
+                                
+                                // Calculate valid user count
+                                let validUserCount = 0;
+                                const promises = inviterData.invitedUsers.map(userWallet => {
+                                    return database.ref(`invites/${userWallet}`).once('value');
+                                });
+                                
+                                Promise.all(promises).then(snapshots => {
+                                    snapshots.forEach(userSnapshot => {
+                                        const userData = userSnapshot.val();
+                                        if (userData && userData.isValidUser) {
+                                            validUserCount++;
+                                        }
+                                    });
+                                    
+                                    // Update inviter's bonus (10% per valid user, max 300%)
+                                    inviterData.inviteBonus = Math.min(validUserCount * 10, 300);
+                                    database.ref(`invites/${inviterWallet}`).set(inviteData);
+                                });
+                            });
+                            
+                            return true; // break
+                        }
+                    });
+                });
+            }
+        }
+        
         // 事件监听
         document.addEventListener('keydown', handleKeyPress);
         startBtn.addEventListener('click', startGame);
@@ -2468,11 +3100,17 @@
         document.getElementById('closeClaimModal').addEventListener('click', hideClaimRewardModal);
         document.getElementById('checkScoreBtn').addEventListener('click', checkScore);
         document.getElementById('claimTokenBtn').addEventListener('click', claimToken);
+        document.getElementById('inviteSystemBtn').addEventListener('click', showInviteModal);
         
         // 排行榜相关事件监听
         document.getElementById('viewLeaderboardBtn').addEventListener('click', showLeaderboardModal);
         document.getElementById('closeLeaderboardModal').addEventListener('click', hideLeaderboardModal);
         document.getElementById('refreshLeaderboardBtn').addEventListener('click', loadGlobalLeaderboard);
+        
+        // 邀请系统事件监听器
+        document.getElementById('closeInviteModal').addEventListener('click', closeInviteModal);
+        document.getElementById('copyInviteBtn').addEventListener('click', copyInviteCode);
+        document.getElementById('submitInviteBtn').addEventListener('click', submitInviteCode);
         document.getElementById('leaderboardRoomSelect').addEventListener('change', loadGlobalLeaderboard);
         
         // 颜色选择
