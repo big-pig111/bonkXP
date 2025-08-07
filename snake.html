@@ -395,20 +395,7 @@
                             Submit
                         </button>
                     </div>
-                    <div class="flex gap-2 mt-2">
-                        <button id="showAvailableCodesBtn" class="bg-memeBlue text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">
-                            Show Available Codes
-                        </button>
-                        <button id="refreshInviteDataBtn" class="bg-memeGreen text-white px-4 py-2 rounded hover:bg-green-600 text-sm">
-                            Refresh Data
-                        </button>
-                        <button id="debugInviteBtn" class="bg-memeYellow text-black px-4 py-2 rounded hover:bg-yellow-600 text-sm">
-                            Debug
-                        </button>
-                        <button id="compareDataBtn" class="bg-memePink text-white px-4 py-2 rounded hover:bg-pink-600 text-sm">
-                            Compare Data
-                        </button>
-                    </div>
+
                     <p class="text-gray-400 text-sm mt-1">You can only submit once, after which you start as a valid user</p>
                 </div>
                 
@@ -3605,177 +3592,6 @@
             alert(message);
         }
         
-        function showAvailableInviteCodes() {
-            database.ref('invites').once('value', (snapshot) => {
-                const invites = snapshot.val() || {};
-                const availableCodes = Object.values(invites).map(data => data.myInviteCode).filter(code => code);
-                
-                if (availableCodes.length === 0) {
-                    showMessage('No invite codes available in the system yet.');
-                } else {
-                    const message = `Available invite codes: ${availableCodes.join(', ')}`;
-                    showMessage(message);
-                }
-            }).catch((error) => {
-                console.error('Error loading available invite codes:', error);
-                showMessage('Error loading available invite codes');
-            });
-        }
-        
-        // 强制刷新邀请数据
-        function compareInviteData() {
-            const walletAddressInput = document.getElementById('walletAddressInput');
-            const walletAddress = walletAddressInput.value.trim();
-            
-            if (!walletAddress) {
-                showMessage('Please enter wallet address first');
-                return;
-            }
-            
-            console.log('=== COMPARING INVITE DATA ===');
-            console.log('Wallet address:', walletAddress);
-            console.log('Current local inviteData:', JSON.stringify(inviteData, null, 2));
-            
-            // Load data using the invite interface method
-            database.ref(`invites/${walletAddress}`).once('value', (snapshot) => {
-                const dbData = snapshot.val();
-                console.log('Data from database (raw):', JSON.stringify(dbData, null, 2));
-                
-                // Compare the two
-                console.log('=== COMPARISON ===');
-                console.log('Local myInviteCode:', inviteData.myInviteCode);
-                console.log('DB myInviteCode:', dbData?.myInviteCode);
-                console.log('Local inviteBonus:', inviteData.inviteBonus);
-                console.log('DB inviteBonus:', dbData?.inviteBonus);
-                console.log('Local hasUsedInviteCode:', inviteData.hasUsedInviteCode);
-                console.log('DB hasUsedInviteCode:', dbData?.hasUsedInviteCode);
-                console.log('Local invitedBy:', inviteData.invitedBy);
-                console.log('DB invitedBy:', dbData?.invitedBy);
-                console.log('Local isValidUser:', inviteData.isValidUser);
-                console.log('DB isValidUser:', dbData?.isValidUser);
-                console.log('==================');
-                
-                // Show result to user
-                const differences = [];
-                if (inviteData.myInviteCode !== dbData?.myInviteCode) differences.push('myInviteCode');
-                if (inviteData.inviteBonus !== dbData?.inviteBonus) differences.push('inviteBonus');
-                if (inviteData.hasUsedInviteCode !== dbData?.hasUsedInviteCode) differences.push('hasUsedInviteCode');
-                if (inviteData.invitedBy !== dbData?.invitedBy) differences.push('invitedBy');
-                if (inviteData.isValidUser !== dbData?.isValidUser) differences.push('isValidUser');
-                
-                if (differences.length === 0) {
-                    showMessage('Data is synchronized!');
-                } else {
-                    showMessage(`Data differences found in: ${differences.join(', ')}`);
-                }
-            });
-        }
-        
-        function refreshInviteData() {
-            const walletAddressInput = document.getElementById('walletAddressInput');
-            const walletAddress = walletAddressInput.value.trim();
-            
-            if (!walletAddress) {
-                showMessage('Please enter wallet address first');
-                return;
-            }
-            
-            console.log('Force refreshing invite data for wallet:', walletAddress);
-            
-            // 重新加载邀请数据
-            database.ref(`invites/${walletAddress}`).once('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    const oldBonus = inviteData.inviteBonus || 0;
-                    
-                    // 确保 myInviteCode 存在
-                    if (!data.myInviteCode) {
-                        data.myInviteCode = generateInviteCode(walletAddress);
-                    }
-                    
-                    inviteData = { ...inviteData, ...data };
-                    
-                    // 确保邀请码正确设置
-                    if (!inviteData.myInviteCode) {
-                        inviteData.myInviteCode = generateInviteCode(walletAddress);
-                    }
-                    
-                    const newBonus = inviteData.inviteBonus || 0;
-                    
-                    console.log('Invite data refreshed:', inviteData);
-                    console.log(`Bonus percentage: ${oldBonus}% -> ${newBonus}%`);
-                    
-                    if (oldBonus !== newBonus) {
-                        showMessage(`Invite data refreshed! Bonus updated: ${oldBonus}% -> ${newBonus}%`);
-                    } else {
-                        showMessage('Invite data refreshed successfully');
-                    }
-                } else {
-                    console.log('No invite data found for wallet:', walletAddress);
-                    // 初始化默认邀请数据
-                    inviteData.myInviteCode = generateInviteCode(walletAddress);
-                    showMessage('No invite data found for this wallet');
-                }
-            }).catch((error) => {
-                console.error('Error refreshing invite data:', error);
-                showMessage('Error refreshing invite data');
-            });
-        }
-        
-        function debugInviteCode() {
-            const walletAddressInput = document.getElementById('walletAddressInput');
-            const walletAddress = walletAddressInput.value.trim();
-            
-            if (!walletAddress) {
-                alert('Please enter wallet address first');
-                return;
-            }
-            
-            console.log('=== Invite Code Debug ===');
-            console.log('Current wallet:', walletAddress);
-            console.log('Generated invite code:', generateInviteCode(walletAddress));
-            console.log('Current local inviteData:', inviteData);
-            
-            // Check if this wallet has invite data
-            database.ref(`invites/${walletAddress}`).once('value', (snapshot) => {
-                const data = snapshot.val();
-                console.log('Current invite data:', data);
-                
-                if (data) {
-                    console.log('My invite code:', data.myInviteCode);
-                    console.log('Invited by:', data.invitedBy);
-                    console.log('Invited users:', data.invitedUsers);
-                    console.log('Bonus:', data.inviteBonus);
-                }
-            });
-            
-            // Check all existing invite codes
-            database.ref('invites').once('value', (snapshot) => {
-                const invites = snapshot.val() || {};
-                console.log('All invite codes:');
-                Object.keys(invites).forEach(wallet => {
-                    const inviteData = invites[wallet];
-                    console.log(`${wallet}: ${inviteData.myInviteCode}`);
-                });
-                
-                // Test invite code matching
-                const testCode = 'V1Er4N87';
-                console.log('Testing invite code:', testCode);
-                Object.keys(invites).forEach(wallet => {
-                    const inviteData = invites[wallet];
-                    if (inviteData.myInviteCode) {
-                        const match = inviteData.myInviteCode.toUpperCase() === testCode.toUpperCase();
-                        console.log(`${wallet}: ${inviteData.myInviteCode} - Match: ${match}`);
-                    }
-                });
-                
-                // Show available invite codes to user
-                const availableCodes = Object.values(invites).map(data => data.myInviteCode).filter(code => code);
-                console.log('Available invite codes:', availableCodes);
-                alert(`Available invite codes: ${availableCodes.join(', ')}`);
-            });
-        }
-        
         function loadInviteDataForGame(gameWalletAddress) {
             // Use the wallet address passed from startGame function
             const walletAddress = gameWalletAddress || playerNameInput.value.trim();
@@ -4067,10 +3883,6 @@
         document.getElementById('closeInviteModal').addEventListener('click', closeInviteModal);
         document.getElementById('copyInviteBtn').addEventListener('click', copyInviteCode);
         document.getElementById('submitInviteBtn').addEventListener('click', submitInviteCode);
-        document.getElementById('showAvailableCodesBtn').addEventListener('click', showAvailableInviteCodes);
-        document.getElementById('refreshInviteDataBtn').addEventListener('click', refreshInviteData);
-        document.getElementById('debugInviteBtn').addEventListener('click', debugInviteCode);
-        document.getElementById('compareDataBtn').addEventListener('click', compareInviteData);
         document.getElementById('refreshInviteListBtn').addEventListener('click', updateInvitedUsersList);
         document.getElementById('leaderboardRoomSelect').addEventListener('change', loadGlobalLeaderboard);
         
