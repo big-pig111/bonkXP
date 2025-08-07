@@ -263,9 +263,14 @@
                         <button class="color-btn w-8 h-8 rounded-full bg-cyan-500 border-2" data-color="#66CCFF"></button>
                     </div>
                 </div>
-                <button id="startBtn" class="bg-memeRed hover:bg-memeRed/80 text-white text-2xl py-3 px-8 rounded-full transform transition-transform hover:scale-110 active:scale-95 font-bold shadow-lg">
-                    Join Game <i class="fa fa-play ml-2"></i>
-                </button>
+                <div class="flex gap-4">
+                    <button id="startBtn" class="bg-memeRed hover:bg-memeRed/80 text-white text-2xl py-3 px-8 rounded-full transform transition-transform hover:scale-110 active:scale-95 font-bold shadow-lg">
+                        Join Game <i class="fa fa-play ml-2"></i>
+                    </button>
+                    <button id="gameGuideBtn" class="bg-memeBlue hover:bg-memeBlue/80 text-white text-xl py-3 px-6 rounded-full transform transition-transform hover:scale-110 active:scale-95 font-bold shadow-lg">
+                        <i class="fa fa-question-circle mr-2"></i>Game Guide
+                    </button>
+                </div>
             </div>
             
             <!-- Game Over Screen -->
@@ -415,6 +420,151 @@
             </div>
         </div>
         
+        <!-- Game Guide Modal -->
+        <div id="gameGuideModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
+            <div class="bg-gray-800 p-6 rounded-lg border-2 border-memeBlue max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-3xl font-bold text-memeBlue">
+                        <i class="fa fa-gamepad mr-2"></i>Game Guide
+                    </h2>
+                    <button id="closeGameGuideModal" class="text-gray-400 hover:text-white text-2xl">×</button>
+                </div>
+                
+                <div class="space-y-6 text-white">
+                    <!-- Game Controls Section -->
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="text-xl font-bold text-memeYellow mb-3">🕹️ Game Controls</h3>
+                        <h4 class="text-lg font-bold text-memeGreen mb-2">Basic Operations</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li><strong>Direction Control:</strong></li>
+                            <li class="ml-4">• Arrow keys: ↑↓←→</li>
+                            <li class="ml-4">• WASD keys: W (up), S (down), A (left), D (right)</li>
+                            <li><strong>Pause/Resume:</strong> Spacebar</li>
+                            <li><strong>Room Switch:</strong> Room switch button at the top-left corner</li>
+                            <li><strong>Special food</strong> comes with surprise effects</li>
+                        </ul>
+                    </div>
+
+                    <!-- Points System Section -->
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="text-xl font-bold text-memeYellow mb-3">🏆 Points System</h3>
+                        <h4 class="text-lg font-bold text-memeGreen mb-2">Earning Points</h4>
+                        <ul class="space-y-2 text-sm mb-4">
+                            <li>• <strong>Regular food:</strong> +10 points</li>
+                            <li>• <strong>Special food:</strong> +50 points (with blinking effect, lasts 5 seconds)</li>
+                            <li>• <strong>Corpse food:</strong> +5 points (generated after other players die)</li>
+                        </ul>
+                        <h4 class="text-lg font-bold text-memeGreen mb-2">Redeeming Points</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li>• 1 point = 10 tokens</li>
+                            <li>• Redemption ratio: 95% to the user, 5% burned to the black hole address</li>
+                            <li>• Points reset to zero after redemption</li>
+                        </ul>
+                    </div>
+
+                    <!-- Invitation System Section -->
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="text-xl font-bold text-memeYellow mb-3">👥 Invitation System</h3>
+                        <ul class="space-y-2 text-sm mb-4">
+                            <li>• The last 8 digits of your wallet address serve as the invitation code</li>
+                            <li>• Each user has a unique 8-digit invitation code</li>
+                        </ul>
+                        <h4 class="text-lg font-bold text-memeGreen mb-2">Invitation Rewards</h4>
+                        <ul class="space-y-2 text-sm mb-4">
+                            <li>• For each valid user invited: 10% permanent point bonus</li>
+                            <li>• Maximum 300% point bonus achievable</li>
+                            <li>• Each invitation code can invite up to 30 people</li>
+                        </ul>
+                        <h4 class="text-lg font-bold text-memeGreen mb-2">Invitation Process</h4>
+                        <ul class="space-y-2 text-sm mb-4">
+                            <li>1. Share your invitation code with friends</li>
+                            <li>2. Friends enter your invitation code in the game</li>
+                            <li>3. Once friends start playing, they become valid users</li>
+                            <li>4. You get a 10% point bonus</li>
+                        </ul>
+                        <h4 class="text-lg font-bold text-memeGreen mb-2">Using an Invitation Code</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li>• An invitation code can only be used once</li>
+                            <li>• You become a valid user after using it</li>
+                        </ul>
+                    </div>
+
+                    <!-- Room System Section -->
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="text-xl font-bold text-memeYellow mb-3">🏠 Room System</h3>
+                        <h4 class="text-lg font-bold text-memeGreen mb-2">Room Types</h4>
+                        <ul class="space-y-2 text-sm mb-4">
+                            <li>• Default Room</li>
+                            <li>• Room 1 - Beginner</li>
+                            <li>• Room 2 - Advanced</li>
+                            <li>• Room 3 - Casual</li>
+                        </ul>
+                        <h4 class="text-lg font-bold text-memeGreen mb-2">Room Restrictions</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li>• Maximum 10 players per room</li>
+                            <li>• No entry when the room is full</li>
+                            <li>• Rooms can be switched at any time</li>
+                        </ul>
+                    </div>
+
+                    <!-- Sound System Section -->
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="text-xl font-bold text-memeYellow mb-3">🎵 Sound System</h3>
+                        <h4 class="text-lg font-bold text-memeGreen mb-2">Music Control</h4>
+                        <ul class="space-y-2 text-sm mb-4">
+                            <li>• Music control button at the top-right corner</li>
+                            <li>• Background music plays automatically</li>
+                        </ul>
+                        <h4 class="text-lg font-bold text-memeGreen mb-2">Sound Effects</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li>• Food-eating sound</li>
+                            <li>• Countdown sound</li>
+                            <li>• Game start sound</li>
+                        </ul>
+                    </div>
+
+                    <!-- Ranking System Section -->
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="text-xl font-bold text-memeYellow mb-3">🏆 Ranking System</h3>
+                        <ul class="space-y-2 text-sm">
+                            <li><strong>Room Rankings:</strong> Displays the top 10 players in the current room, with real-time score updates, showing player names and scores</li>
+                            <li><strong>Global Rankings:</strong> Displays the top 20 players across all rooms, allows viewing of specific rooms, and shows wallet addresses and room information</li>
+                        </ul>
+                    </div>
+
+                    <!-- Token Redemption System Section -->
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="text-xl font-bold text-memeYellow mb-3">💰 Token Redemption System</h3>
+                        <h4 class="text-lg font-bold text-memeGreen mb-2">Redemption Process</h4>
+                        <ul class="space-y-2 text-sm mb-4">
+                            <li>1. Click the "Claim Rewards" button</li>
+                            <li>2. Enter your wallet address</li>
+                            <li>3. Click "Check Points" to view your points</li>
+                            <li>4. Click "Claim Tokens" to redeem tokens</li>
+                        </ul>
+                        <h4 class="text-lg font-bold text-memeGreen mb-2">Redemption Details</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li>• Users receive 95% of the tokens</li>
+                            <li>• 5% of the tokens are burned to the black hole address</li>
+                            <li>• Transaction hash is displayed</li>
+                            <li>• Points reset to zero after redemption</li>
+                        </ul>
+                    </div>
+
+                    <!-- Notes Section -->
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="text-xl font-bold text-memeYellow mb-3">⚠️ Notes</h3>
+                        <h4 class="text-lg font-bold text-memeGreen mb-2">Game Restrictions</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li>• Room capacity limit: 10 players</li>
+                            <li>• Invitation limit: 30 people</li>
+                            <li>• Maximum point bonus: 300%</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Global Leaderboard Modal -->
         <div id="leaderboardModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
             <div class="bg-gray-800 p-6 rounded-lg border-2 border-memePink max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
@@ -2733,6 +2883,30 @@
             `;
         }
         
+        // 显示游戏介绍模态框
+        function showGameGuideModal() {
+            const modal = document.getElementById('gameGuideModal');
+            modal.classList.remove('hidden');
+        }
+        
+        // 隐藏游戏介绍模态框
+        function hideGameGuideModal() {
+            const modal = document.getElementById('gameGuideModal');
+            modal.classList.add('hidden');
+        }
+        
+        // 初始化游戏介绍模态框点击背景关闭功能
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameGuideModal = document.getElementById('gameGuideModal');
+            if (gameGuideModal) {
+                gameGuideModal.addEventListener('click', (e) => {
+                    if (e.target === gameGuideModal) {
+                        hideGameGuideModal();
+                    }
+                });
+            }
+        });
+        
         // 显示兑换成功弹窗
         function showSuccessModal(result, amount) {
             // 创建成功弹窗
@@ -3273,6 +3447,10 @@
         restartBtn.addEventListener('click', restartGame);
         pauseBtn.addEventListener('click', togglePause);
         roomSwitchBtn.addEventListener('click', switchRoom);
+        
+        // 游戏介绍相关事件监听
+        document.getElementById('gameGuideBtn').addEventListener('click', showGameGuideModal);
+        document.getElementById('closeGameGuideModal').addEventListener('click', hideGameGuideModal);
         
         // 领取奖励相关事件监听
         document.getElementById('claimRewardBtn').addEventListener('click', showClaimRewardModal);
