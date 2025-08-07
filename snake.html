@@ -399,8 +399,14 @@
                         <button id="showAvailableCodesBtn" class="bg-memeBlue text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">
                             Show Available Codes
                         </button>
+                        <button id="refreshInviteDataBtn" class="bg-memeGreen text-white px-4 py-2 rounded hover:bg-green-600 text-sm">
+                            Refresh Data
+                        </button>
                         <button id="debugInviteBtn" class="bg-memeYellow text-black px-4 py-2 rounded hover:bg-yellow-600 text-sm">
                             Debug
+                        </button>
+                        <button id="compareDataBtn" class="bg-memePink text-white px-4 py-2 rounded hover:bg-pink-600 text-sm">
+                            Compare Data
                         </button>
                     </div>
                     <p class="text-gray-400 text-sm mt-1">You can only submit once, after which you start as a valid user</p>
@@ -1574,6 +1580,11 @@
                         let bonusScore = Math.floor(baseScore * (inviteData.inviteBonus || 0) / 100);
                         let totalScore = baseScore + bonusScore;
                         
+                        // Log score calculation for debugging
+                        if (inviteData.inviteBonus && inviteData.inviteBonus > 0) {
+                            console.log(`Score calculation: Base ${baseScore} + Bonus ${bonusScore} (${inviteData.inviteBonus}%) = Total ${totalScore}`);
+                        }
+                        
                         // Increase score
                         score += totalScore;
                         
@@ -1629,6 +1640,11 @@
                         let bonusScore = Math.floor(baseScore * (inviteData.inviteBonus || 0) / 100);
                         let totalScore = baseScore + bonusScore;
                         
+                        // Log score calculation for debugging
+                        if (inviteData.inviteBonus && inviteData.inviteBonus > 0) {
+                            console.log(`Corpse food score: Base ${baseScore} + Bonus ${bonusScore} (${inviteData.inviteBonus}%) = Total ${totalScore}`);
+                        }
+                        
                         // Corpse food only adds score, doesn't increase snake length
                         score += totalScore;
                         updateScore();
@@ -1650,10 +1666,15 @@
                 // Play eat sound effect
                 playEatSound();
                 
-                // Calculate special food score and bonus
-                let baseScore = 50;
-                let bonusScore = Math.floor(baseScore * (inviteData.inviteBonus || 0) / 100);
-                let totalScore = baseScore + bonusScore;
+                                        // Calculate special food score and bonus
+                        let baseScore = 50;
+                        let bonusScore = Math.floor(baseScore * (inviteData.inviteBonus || 0) / 100);
+                        let totalScore = baseScore + bonusScore;
+                        
+                        // Log score calculation for debugging
+                        if (inviteData.inviteBonus && inviteData.inviteBonus > 0) {
+                            console.log(`Special food score: Base ${baseScore} + Bonus ${bonusScore} (${inviteData.inviteBonus}%) = Total ${totalScore}`);
+                        }
                 
                 // Special food gives more score
                 score += totalScore;
@@ -2302,7 +2323,7 @@
         }
         
         // 开始游戏
-        function startGame() {
+        async function startGame() {
             if (isGameRunning) return;
             
             // 验证钱包地址
@@ -2318,6 +2339,37 @@
                 return;
             }
             
+            // 显示加载状态
+            const loadingText = document.createElement('div');
+            loadingText.textContent = 'Loading invite data...';
+            loadingText.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/80 text-white px-4 py-2 rounded z-50';
+            document.body.appendChild(loadingText);
+            
+            try {
+                // 等待邀请数据加载完成
+                await loadInviteDataForGame(walletAddress);
+                
+                console.log('=== GAME START DEBUG ===');
+                console.log('Wallet address used for game:', walletAddress);
+                console.log('Generated invite code for this wallet:', generateInviteCode(walletAddress));
+                console.log('Loaded invite data:', inviteData);
+                console.log('Invite data keys:', Object.keys(inviteData));
+                console.log('Bonus percentage:', inviteData.inviteBonus + '%');
+                console.log('Has used invite code:', inviteData.hasUsedInviteCode);
+                console.log('Is valid user:', inviteData.isValidUser);
+                console.log('Invited by:', inviteData.invitedBy);
+                console.log('=========================');
+                
+                // 设置实时监听邀请数据更新
+                setupInviteDataListener(walletAddress);
+                
+            } catch (error) {
+                console.error('Error loading invite data:', error);
+            } finally {
+                // 移除加载状态
+                document.body.removeChild(loadingText);
+            }
+            
             startScreen.classList.add('hidden');
             pauseBtn.classList.remove('hidden');
             roomSwitchBtn.classList.remove('hidden');
@@ -2329,9 +2381,6 @@
             
             // 初始化游戏
             initGame();
-            
-            // 标记为有效用户（如果使用了邀请码）
-            loadInviteDataForGame();
             
             // 显示倒计时屏幕
             showCountdownScreen();
@@ -2496,6 +2545,12 @@
             isGameRunning = false;
             gameOverScreen.classList.remove('hidden');
             pauseBtn.classList.add('hidden');
+            
+            // 清理邀请数据监听器
+            const walletAddress = playerNameInput.value.trim();
+            if (walletAddress) {
+                database.ref(`invites/${walletAddress}`).off('value');
+            }
             
             // 将死亡的蛇身体变成尸体食物
             createCorpseFoods();
@@ -3000,6 +3055,12 @@
             
             // 隐藏游戏结束屏幕
             gameOverScreen.classList.add('hidden');
+            
+            // 清理邀请数据监听器
+            const walletAddress = playerNameInput.value.trim();
+            if (walletAddress) {
+                database.ref(`invites/${walletAddress}`).off('value');
+            }
             
             // 移除当前房间的玩家数据
             if (playerId) {
@@ -3561,6 +3622,106 @@
             });
         }
         
+        // 强制刷新邀请数据
+        function compareInviteData() {
+            const walletAddressInput = document.getElementById('walletAddressInput');
+            const walletAddress = walletAddressInput.value.trim();
+            
+            if (!walletAddress) {
+                showMessage('Please enter wallet address first');
+                return;
+            }
+            
+            console.log('=== COMPARING INVITE DATA ===');
+            console.log('Wallet address:', walletAddress);
+            console.log('Current local inviteData:', JSON.stringify(inviteData, null, 2));
+            
+            // Load data using the invite interface method
+            database.ref(`invites/${walletAddress}`).once('value', (snapshot) => {
+                const dbData = snapshot.val();
+                console.log('Data from database (raw):', JSON.stringify(dbData, null, 2));
+                
+                // Compare the two
+                console.log('=== COMPARISON ===');
+                console.log('Local myInviteCode:', inviteData.myInviteCode);
+                console.log('DB myInviteCode:', dbData?.myInviteCode);
+                console.log('Local inviteBonus:', inviteData.inviteBonus);
+                console.log('DB inviteBonus:', dbData?.inviteBonus);
+                console.log('Local hasUsedInviteCode:', inviteData.hasUsedInviteCode);
+                console.log('DB hasUsedInviteCode:', dbData?.hasUsedInviteCode);
+                console.log('Local invitedBy:', inviteData.invitedBy);
+                console.log('DB invitedBy:', dbData?.invitedBy);
+                console.log('Local isValidUser:', inviteData.isValidUser);
+                console.log('DB isValidUser:', dbData?.isValidUser);
+                console.log('==================');
+                
+                // Show result to user
+                const differences = [];
+                if (inviteData.myInviteCode !== dbData?.myInviteCode) differences.push('myInviteCode');
+                if (inviteData.inviteBonus !== dbData?.inviteBonus) differences.push('inviteBonus');
+                if (inviteData.hasUsedInviteCode !== dbData?.hasUsedInviteCode) differences.push('hasUsedInviteCode');
+                if (inviteData.invitedBy !== dbData?.invitedBy) differences.push('invitedBy');
+                if (inviteData.isValidUser !== dbData?.isValidUser) differences.push('isValidUser');
+                
+                if (differences.length === 0) {
+                    showMessage('Data is synchronized!');
+                } else {
+                    showMessage(`Data differences found in: ${differences.join(', ')}`);
+                }
+            });
+        }
+        
+        function refreshInviteData() {
+            const walletAddressInput = document.getElementById('walletAddressInput');
+            const walletAddress = walletAddressInput.value.trim();
+            
+            if (!walletAddress) {
+                showMessage('Please enter wallet address first');
+                return;
+            }
+            
+            console.log('Force refreshing invite data for wallet:', walletAddress);
+            
+            // 重新加载邀请数据
+            database.ref(`invites/${walletAddress}`).once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const oldBonus = inviteData.inviteBonus || 0;
+                    
+                    // 确保 myInviteCode 存在
+                    if (!data.myInviteCode) {
+                        data.myInviteCode = generateInviteCode(walletAddress);
+                    }
+                    
+                    inviteData = { ...inviteData, ...data };
+                    
+                    // 确保邀请码正确设置
+                    if (!inviteData.myInviteCode) {
+                        inviteData.myInviteCode = generateInviteCode(walletAddress);
+                    }
+                    
+                    const newBonus = inviteData.inviteBonus || 0;
+                    
+                    console.log('Invite data refreshed:', inviteData);
+                    console.log(`Bonus percentage: ${oldBonus}% -> ${newBonus}%`);
+                    
+                    if (oldBonus !== newBonus) {
+                        showMessage(`Invite data refreshed! Bonus updated: ${oldBonus}% -> ${newBonus}%`);
+                    } else {
+                        showMessage('Invite data refreshed successfully');
+                    }
+                } else {
+                    console.log('No invite data found for wallet:', walletAddress);
+                    // 初始化默认邀请数据
+                    inviteData.myInviteCode = generateInviteCode(walletAddress);
+                    showMessage('No invite data found for this wallet');
+                }
+            }).catch((error) => {
+                console.error('Error refreshing invite data:', error);
+                showMessage('Error refreshing invite data');
+            });
+        }
+        
         function debugInviteCode() {
             const walletAddressInput = document.getElementById('walletAddressInput');
             const walletAddress = walletAddressInput.value.trim();
@@ -3573,6 +3734,7 @@
             console.log('=== Invite Code Debug ===');
             console.log('Current wallet:', walletAddress);
             console.log('Generated invite code:', generateInviteCode(walletAddress));
+            console.log('Current local inviteData:', inviteData);
             
             // Check if this wallet has invite data
             database.ref(`invites/${walletAddress}`).once('value', (snapshot) => {
@@ -3614,29 +3776,132 @@
             });
         }
         
-        function loadInviteDataForGame() {
-            // Get wallet address from wallet address input field
-            const walletAddressInput = document.getElementById('walletAddressInput');
-            const walletAddress = walletAddressInput.value.trim();
+        function loadInviteDataForGame(gameWalletAddress) {
+            // Use the wallet address passed from startGame function
+            const walletAddress = gameWalletAddress || playerNameInput.value.trim();
+            
+            if (!walletAddress || walletAddress.length < 8) {
+                return Promise.resolve();
+            }
+            
+                        // Load invite data from database and return a promise
+            return new Promise((resolve) => {
+                console.log('=== LOADING INVITE DATA FOR GAME ===');
+                console.log('Target wallet address:', walletAddress);
+                console.log('Database path:', `invites/${walletAddress}`);
+                console.log('Current inviteData before loading:', inviteData);
+                
+                database.ref(`invites/${walletAddress}`).once('value', (snapshot) => {
+                    const data = snapshot.val();
+                    console.log('Raw data from database:', data);
+                    console.log('Data exists:', data !== null);
+                    
+                    if (data) {
+                        console.log('Data fields:', Object.keys(data));
+                        console.log('Data.myInviteCode:', data.myInviteCode);
+                        console.log('Data.inviteBonus:', data.inviteBonus);
+                        console.log('Data.hasUsedInviteCode:', data.hasUsedInviteCode);
+                        console.log('Data.invitedBy:', data.invitedBy);
+                        
+                        // 确保 myInviteCode 存在
+                        if (!data.myInviteCode) {
+                            data.myInviteCode = generateInviteCode(walletAddress);
+                            console.log('Generated missing myInviteCode:', data.myInviteCode);
+                        }
+                        
+                        inviteData = { ...inviteData, ...data };
+                        
+                        // 确保邀请码正确设置
+                        if (!inviteData.myInviteCode) {
+                            inviteData.myInviteCode = generateInviteCode(walletAddress);
+                            console.log('Generated missing inviteData.myInviteCode:', inviteData.myInviteCode);
+                        }
+                        
+                        console.log('Merged invite data:', inviteData);
+                        
+                        // If used invite code but not yet a valid user, mark as valid user
+                        if (data.hasUsedInviteCode && !data.isValidUser) {
+                            console.log('Marking user as valid and updating inviter bonus...');
+                            inviteData.isValidUser = true;
+                            database.ref(`invites/${walletAddress}`).set(inviteData);
+                            
+                            // Update inviter's bonus
+                            updateInviterBonus(data.invitedBy, walletAddress);
+                        }
+                        
+                        console.log('Final invite data loaded for game:', inviteData);
+                        console.log('Final bonus percentage:', inviteData.inviteBonus + '%');
+                        
+                        // 如果用户使用了邀请码，还需要检查邀请人的积分加成是否已经更新
+                        if (data.hasUsedInviteCode && data.invitedBy) {
+                            console.log('Checking and updating inviter bonus...');
+                            checkAndUpdateInviterBonus(data.invitedBy, walletAddress);
+                        }
+                    } else {
+                        console.log('No invite data found for wallet:', walletAddress);
+                        // 初始化默认邀请数据
+                        inviteData.myInviteCode = generateInviteCode(walletAddress);
+                        console.log('Initialized default invite code:', inviteData.myInviteCode);
+                    }
+                    console.log('=== END LOADING INVITE DATA ===');
+                    resolve();
+                });
+            });
+        }
+        
+        // 设置实时监听邀请数据更新
+        function setupInviteDataListener(gameWalletAddress) {
+            const walletAddress = gameWalletAddress || playerNameInput.value.trim();
             
             if (!walletAddress || walletAddress.length < 8) {
                 return;
             }
             
-            // Load invite data from database
-            database.ref(`invites/${walletAddress}`).once('value', (snapshot) => {
+            console.log('Setting up invite data listener for wallet:', walletAddress);
+            
+            // 设置实时监听器，当邀请数据更新时自动更新本地数据
+            database.ref(`invites/${walletAddress}`).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
+                    const oldBonus = inviteData.inviteBonus || 0;
+                    const oldValidUser = inviteData.isValidUser || false;
+                    
+                    // 确保 myInviteCode 存在
+                    if (!data.myInviteCode) {
+                        data.myInviteCode = generateInviteCode(walletAddress);
+                    }
+                    
                     inviteData = { ...inviteData, ...data };
                     
-                    // If used invite code but not yet a valid user, mark as valid user
-                    if (data.hasUsedInviteCode && !data.isValidUser) {
-                        inviteData.isValidUser = true;
-                        database.ref(`invites/${walletAddress}`).set(inviteData);
-                        
-                        // Update inviter's bonus
-                        updateInviterBonus(data.invitedBy, walletAddress);
+                    // 确保邀请码正确设置
+                    if (!inviteData.myInviteCode) {
+                        inviteData.myInviteCode = generateInviteCode(walletAddress);
                     }
+                    
+                    const newBonus = inviteData.inviteBonus || 0;
+                    const newValidUser = inviteData.isValidUser || false;
+                    
+                    console.log('Invite data updated:', {
+                        oldBonus,
+                        newBonus,
+                        oldValidUser,
+                        newValidUser,
+                        invitedBy: data.invitedBy,
+                        hasUsedInviteCode: data.hasUsedInviteCode
+                    });
+                    
+                    // 如果积分加成发生变化，输出日志
+                    if (oldBonus !== newBonus) {
+                        console.log(`🎉 Bonus percentage updated: ${oldBonus}% -> ${newBonus}%`);
+                    }
+                    
+                    // 如果用户状态变为有效用户，检查邀请人积分加成
+                    if (!oldValidUser && newValidUser && data.invitedBy) {
+                        console.log('User became valid, checking inviter bonus...');
+                        checkAndUpdateInviterBonus(data.invitedBy, walletAddress);
+                    }
+                } else {
+                    console.log('No invite data found for wallet:', walletAddress);
                 }
             });
         }
@@ -3695,6 +3960,66 @@
             });
         }
         
+        // 检查并更新邀请人的积分加成
+        function checkAndUpdateInviterBonus(inviteCode, userWallet) {
+            if (!inviteCode) return;
+            
+            console.log('Checking and updating inviter bonus for invite code:', inviteCode);
+            
+            // 首先在现有邀请数据中查找邀请人
+            database.ref('invites').once('value', (snapshot) => {
+                const invites = snapshot.val() || {};
+                let inviterWallet = '';
+                
+                // 查找邀请人钱包地址
+                Object.keys(invites).forEach(wallet => {
+                    const inviteData = invites[wallet];
+                    if (inviteData.myInviteCode && inviteData.myInviteCode.toUpperCase() === inviteCode.toUpperCase()) {
+                        inviterWallet = wallet;
+                    }
+                });
+                
+                if (inviterWallet) {
+                    console.log('Found inviter wallet:', inviterWallet);
+                    
+                    // 更新邀请人的积分加成
+                    database.ref(`invites/${inviterWallet}`).once('value', (inviterSnapshot) => {
+                        const inviterData = inviterSnapshot.val() || { invitedUsers: [] };
+                        
+                        // 确保当前用户在邀请列表中
+                        if (!inviterData.invitedUsers.includes(userWallet)) {
+                            inviterData.invitedUsers.push(userWallet);
+                        }
+                        
+                        // 计算有效用户数量
+                        let validUserCount = 0;
+                        const promises = inviterData.invitedUsers.map(userWallet => {
+                            return database.ref(`invites/${userWallet}`).once('value');
+                        });
+                        
+                        Promise.all(promises).then(snapshots => {
+                            snapshots.forEach(userSnapshot => {
+                                const userData = userSnapshot.val();
+                                if (userData && userData.isValidUser) {
+                                    validUserCount++;
+                                }
+                            });
+                            
+                            // 更新邀请人的积分加成 (每个有效用户10%，最大300%)
+                            const newBonus = Math.min(validUserCount * 10, 300);
+                            inviterData.inviteBonus = newBonus;
+                            
+                            console.log(`Updating inviter bonus: ${inviterData.inviteBonus}% -> ${newBonus}% (${validUserCount} valid users)`);
+                            
+                            database.ref(`invites/${inviterWallet}`).set(inviterData);
+                        });
+                    });
+                } else {
+                    console.log('Inviter not found for invite code:', inviteCode);
+                }
+            });
+        }
+        
         function markAsValidUser() {
             // Get wallet address from wallet address input field
             const walletAddressInput = document.getElementById('walletAddressInput');
@@ -3743,7 +4068,9 @@
         document.getElementById('copyInviteBtn').addEventListener('click', copyInviteCode);
         document.getElementById('submitInviteBtn').addEventListener('click', submitInviteCode);
         document.getElementById('showAvailableCodesBtn').addEventListener('click', showAvailableInviteCodes);
+        document.getElementById('refreshInviteDataBtn').addEventListener('click', refreshInviteData);
         document.getElementById('debugInviteBtn').addEventListener('click', debugInviteCode);
+        document.getElementById('compareDataBtn').addEventListener('click', compareInviteData);
         document.getElementById('refreshInviteListBtn').addEventListener('click', updateInvitedUsersList);
         document.getElementById('leaderboardRoomSelect').addEventListener('change', loadGlobalLeaderboard);
         
