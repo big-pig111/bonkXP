@@ -395,13 +395,21 @@
                             Submit
                         </button>
                     </div>
+                    <div class="flex gap-2 mt-2">
+                        <button id="showAvailableCodesBtn" class="bg-memeBlue text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">
+                            Show Available Codes
+                        </button>
+                        <button id="debugInviteBtn" class="bg-memeYellow text-black px-4 py-2 rounded hover:bg-yellow-600 text-sm">
+                            Debug
+                        </button>
+                    </div>
                     <p class="text-gray-400 text-sm mt-1">You can only submit once, after which you start as a valid user</p>
                 </div>
                 
                 <!-- Invite Stats Section -->
                 <div class="mb-4">
                     <h3 class="text-lg font-bold text-white mb-2">Invite Stats</h3>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
                         <div class="bg-gray-700 p-3 rounded text-center">
                             <div class="text-memeGreen text-xl font-bold" id="invitedCount">0</div>
                             <div class="text-gray-400 text-sm">Invited</div>
@@ -409,6 +417,19 @@
                         <div class="bg-gray-700 p-3 rounded text-center">
                             <div class="text-memeYellow text-xl font-bold" id="bonusPercent">0%</div>
                             <div class="text-gray-400 text-sm">Bonus Points</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Detailed Invite List -->
+                    <div class="bg-gray-700 p-3 rounded">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="text-memeBlue font-bold">Invited Users Details</h4>
+                            <button id="refreshInviteListBtn" class="bg-memeBlue hover:bg-memeBlue/80 text-white px-2 py-1 rounded text-xs">
+                                <i class="fa fa-refresh mr-1"></i>Refresh
+                            </button>
+                        </div>
+                        <div id="invitedUsersList" class="max-h-32 overflow-y-auto text-sm">
+                            <div class="text-gray-400 text-center">No invited users yet</div>
                         </div>
                     </div>
                 </div>
@@ -457,7 +478,7 @@
                         <h4 class="text-lg font-bold text-memeGreen mb-2">Redeeming Points</h4>
                         <ul class="space-y-2 text-sm">
                             <li>• 1 point = 10 tokens</li>
-                            <li>• Redemption ratio: 95% to the user, 5% burned to the black hole address</li>
+                            <li>• Redemption ratio: 90% to the user, 10% burned to the black hole address</li>
                             <li>• Points reset to zero after redemption</li>
                         </ul>
                     </div>
@@ -544,8 +565,8 @@
                         </ul>
                         <h4 class="text-lg font-bold text-memeGreen mb-2">Redemption Details</h4>
                         <ul class="space-y-2 text-sm">
-                            <li>• Users receive 95% of the tokens</li>
-                            <li>• 5% of the tokens are burned to the black hole address</li>
+                            <li>• Users receive 90% of the tokens</li>
+                            <li>• 10% of the tokens are burned to the black hole address</li>
                             <li>• Transaction hash is displayed</li>
                             <li>• Points reset to zero after redemption</li>
                         </ul>
@@ -2644,7 +2665,7 @@
             }
         }
         
-        // 兑换代币（双重转账：用户95% + 黑洞5%）
+        // 兑换代币（双重转账：用户90% + 黑洞10%）
         async function claimToken() {
             const walletAddress = document.getElementById('walletAddressInput').value.trim();
             
@@ -2664,19 +2685,19 @@
                 }
                 
                 const totalTokenAmount = scoreAmount * 10; // 1积分 = 10代币
-                const userTokenAmount = Math.floor(totalTokenAmount * 0.95); // 95%给用户
-                const blackholeTokenAmount = totalTokenAmount - userTokenAmount; // 5%给黑洞
+                const userTokenAmount = Math.floor(totalTokenAmount * 0.90); // 90%给用户
+                const blackholeTokenAmount = totalTokenAmount - userTokenAmount; // 10%给黑洞
                 
-                console.log(`Token distribution plan: Total ${totalTokenAmount}, User ${userTokenAmount}(95%), Blackhole ${blackholeTokenAmount}(5%)`);
+                console.log(`Token distribution plan: Total ${totalTokenAmount}, User ${userTokenAmount}(90%), Blackhole ${blackholeTokenAmount}(10%)`);
                 
                 // Blackhole address (for testing: user-provided valid Solana address)
                 const BLACKHOLE_ADDRESS = '6QHygYqsfancR8uJ4Sez8fugRyUzZQj2KayCyqiLKTPy';
                 
                 showClaimResult('Step 1/2: Transferring tokens to user...', 'info');
                 
-                // Step 1: Transfer to user (95%)
-                // First temporarily set user score to 95% corresponding score
-                const userScore = Math.floor(scoreAmount * 0.95);
+                // Step 1: Transfer to user (90%)
+                // First temporarily set user score to 90% corresponding score
+                const userScore = Math.floor(scoreAmount * 0.90);
                 console.log(`Setting user score: ${walletAddress} -> ${userScore}`);
                 await setUserScore(walletAddress, userScore);
                 
@@ -2697,8 +2718,8 @@
                 
                 showClaimResult('Step 2/2: Burning tokens to blackhole...', 'info');
                 
-                // Step 2: Transfer to blackhole address (5%)
-                // Set blackhole address score to 5% corresponding score
+                // Step 2: Transfer to blackhole address (10%)
+                // Set blackhole address score to 10% corresponding score
                 const blackholeScore = scoreAmount - userScore;
                 console.log(`Setting blackhole score: ${BLACKHOLE_ADDRESS} -> ${blackholeScore}`);
                 await setUserScore(BLACKHOLE_ADDRESS, blackholeScore);
@@ -2913,9 +2934,9 @@
             const successModal = document.createElement('div');
             successModal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
             
-            // 计算实际发送给用户的代币数量（95%）
-            const userAmount = Math.floor(amount * 0.95);
-            const blackholeAmount = amount - userAmount;
+                                            // 计算实际发送给用户的代币数量（90%）
+                const userAmount = Math.floor(amount * 0.90);
+                const blackholeAmount = amount - userAmount;
             
             successModal.innerHTML = `
                 <div class="bg-gray-800 p-6 rounded-lg border-2 border-memeGreen max-w-md w-full mx-4">
@@ -2926,13 +2947,13 @@
                         <!-- 用户获得的代币 -->
                         <div class="mb-4 p-3 bg-gray-700 rounded">
                             <div class="text-lg font-bold text-memeYellow mb-2">${userAmount} Tokens</div>
-                            <div class="text-sm text-gray-400">Sent to your wallet (95%)</div>
+                            <div class="text-sm text-gray-400">Sent to your wallet (90%)</div>
                         </div>
                         
                         <!-- 黑洞销毁的代币 -->
                         <div class="mb-4 p-3 bg-gray-700 rounded border border-red-500">
                             <div class="text-lg font-bold text-red-400 mb-2">🔥 ${blackholeAmount} Tokens Burned</div>
-                            <div class="text-sm text-gray-400">Sent to blackhole address (5%)</div>
+                            <div class="text-sm text-gray-400">Sent to blackhole address (10%)</div>
                         </div>
                         
                         <!-- 用户转账哈希 -->
@@ -3123,6 +3144,20 @@
             return walletAddress.slice(-8);
         }
         
+        function validateInviteCode(inviteCode) {
+            // 验证邀请码格式：8位字符，只包含字母和数字
+            if (!inviteCode || inviteCode.length !== 8) {
+                return { valid: false, message: 'Invite code must be exactly 8 characters long' };
+            }
+            
+            const validChars = /^[A-Za-z0-9]+$/;
+            if (!validChars.test(inviteCode)) {
+                return { valid: false, message: 'Invite code can only contain letters and numbers' };
+            }
+            
+            return { valid: true };
+        }
+        
         function showInviteModal() {
             const modal = document.getElementById('inviteModal');
             if (modal) {
@@ -3138,6 +3173,12 @@
             const modal = document.getElementById('inviteModal');
             if (modal) {
                 modal.classList.add('hidden');
+                
+                // 停止实时监听邀请数据
+                const walletAddress = document.getElementById('walletAddressInput').value.trim();
+                if (walletAddress) {
+                    database.ref(`invites/${walletAddress}`).off('value');
+                }
                 
                 // 重新显示领取奖励弹窗
                 showClaimRewardModal();
@@ -3162,8 +3203,8 @@
             inviteData.myInviteCode = generateInviteCode(walletAddress);
             document.getElementById('myInviteCode').textContent = inviteData.myInviteCode;
             
-            // Load invite data from database
-            database.ref(`invites/${walletAddress}`).once('value', (snapshot) => {
+            // Load invite data from database with real-time updates
+            database.ref(`invites/${walletAddress}`).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
                     inviteData = { ...inviteData, ...data };
@@ -3182,10 +3223,70 @@
             });
         }
         
+        function updateInvitedUsersList() {
+            const invitedUsersList = document.getElementById('invitedUsersList');
+            
+            if (!inviteData.invitedUsers || inviteData.invitedUsers.length === 0) {
+                invitedUsersList.innerHTML = '<div class="text-gray-400 text-center">No invited users yet</div>';
+                return;
+            }
+            
+            // Load detailed information for each invited user
+            const promises = inviteData.invitedUsers.map(userWallet => {
+                return database.ref(`invites/${userWallet}`).once('value');
+            });
+            
+            Promise.all(promises).then(snapshots => {
+                let html = '';
+                let validUserCount = 0;
+                
+                snapshots.forEach((snapshot, index) => {
+                    const userData = snapshot.val();
+                    const userWallet = inviteData.invitedUsers[index];
+                    const isValidUser = userData && userData.isValidUser;
+                    
+                    if (isValidUser) {
+                        validUserCount++;
+                    }
+                    
+                    // Short wallet display
+                    const shortWallet = userWallet.substring(0, 6) + '...' + userWallet.substring(userWallet.length - 4);
+                    
+                    html += `
+                        <div class="flex justify-between items-center py-1 border-b border-gray-600">
+                            <div class="flex items-center">
+                                <span class="w-2 h-2 rounded-full ${isValidUser ? 'bg-memeGreen' : 'bg-gray-500'} mr-2"></span>
+                                <span class="text-white font-mono text-xs">${shortWallet}</span>
+                            </div>
+                            <div class="text-xs ${isValidUser ? 'text-memeGreen' : 'text-gray-400'}">
+                                ${isValidUser ? 'Valid' : 'Pending'}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // Add summary
+                html = `
+                    <div class="text-xs text-memeBlue mb-2">
+                        Valid users: ${validUserCount}/${inviteData.invitedUsers.length}
+                    </div>
+                    ${html}
+                `;
+                
+                invitedUsersList.innerHTML = html;
+            }).catch(error => {
+                console.error('Failed to load invited users details:', error);
+                invitedUsersList.innerHTML = '<div class="text-red-400 text-center">Failed to load details</div>';
+            });
+        }
+        
         function updateInviteUI() {
             // Update invite stats
             document.getElementById('invitedCount').textContent = inviteData.invitedUsers.length;
             document.getElementById('bonusPercent').textContent = inviteData.inviteBonus + '%';
+            
+            // Update detailed invited users list
+            updateInvitedUsersList();
             
             // Update status information
             const statusEl = document.getElementById('inviteStatus');
@@ -3240,7 +3341,7 @@
         
         function submitInviteCode() {
             const inviteCodeInput = document.getElementById('inviteCodeInput');
-            const inviteCode = inviteCodeInput.value.trim().toUpperCase();
+            const inviteCode = inviteCodeInput.value.trim();
             
             // Get wallet address from wallet address input field
             const walletAddressInput = document.getElementById('walletAddressInput');
@@ -3256,8 +3357,10 @@
                 return;
             }
             
-            if (inviteCode.length !== 8) {
-                showMessage('Invite code must be 8 digits');
+            // Validate invite code format
+            const validation = validateInviteCode(inviteCode);
+            if (!validation.valid) {
+                showMessage(validation.message);
                 return;
             }
             
@@ -3271,54 +3374,244 @@
                 return;
             }
             
-            // Find inviter
-            database.ref('players').orderByChild('wallet').once('value', (snapshot) => {
-                let inviterFound = false;
-                let inviterWallet = '';
-                
-                snapshot.forEach((childSnapshot) => {
-                    const playerData = childSnapshot.val();
-                    if (playerData.wallet && generateInviteCode(playerData.wallet) === inviteCode) {
-                        inviterFound = true;
-                        inviterWallet = playerData.wallet;
-                        return true; // break
-                    }
+            // Find inviter - search in all rooms
+            const rooms = ['default', 'room1', 'room2', 'room3'];
+            let inviterFound = false;
+            let inviterWallet = '';
+            
+            console.log('Searching for invite code:', inviteCode);
+            
+            const searchPromises = rooms.map(roomName => 
+                database.ref(`rooms/${roomName}/players`).once('value')
+            );
+            
+            Promise.all(searchPromises).then((snapshots) => {
+                snapshots.forEach((snapshot, roomIndex) => {
+                    if (inviterFound) return; // Already found
+                    
+                    const players = snapshot.val() || {};
+                    console.log(`Room ${rooms[roomIndex]} players:`, players);
+                    
+                                            Object.keys(players).forEach(playerId => {
+                            const playerData = players[playerId];
+                            if (playerData.wallet) {
+                                const generatedCode = generateInviteCode(playerData.wallet);
+                                console.log(`Player ${playerData.wallet} invite code: ${generatedCode}`);
+                                if (generatedCode.toUpperCase() === inviteCode.toUpperCase()) {
+                                    inviterFound = true;
+                                    inviterWallet = playerData.wallet;
+                                    console.log('Found inviter:', inviterWallet);
+                                }
+                            }
+                        });
                 });
                 
                 if (inviterFound) {
-                    // Check inviter's invite limit
-                    database.ref(`invites/${inviterWallet}`).once('value', (inviterSnapshot) => {
-                        const inviterData = inviterSnapshot.val() || { invitedUsers: [] };
-                        
-                        if (inviterData.invitedUsers.length >= 30) {
-                            showMessage('This invite code has reached the invite limit');
-                            return;
-                        }
-                        
-                        // Record invite relationship
-                        inviteData.invitedBy = inviteCode;
-                        inviteData.hasUsedInviteCode = true;
-                        
-                        // Save to database
-                        database.ref(`invites/${walletAddress}`).set(inviteData);
-                        
-                        // Update inviter's data
-                        inviterData.invitedUsers.push(walletAddress);
-                        inviterData.inviteBonus = Math.min(inviterData.invitedUsers.length * 10, 300); // Max 300% bonus
-                        database.ref(`invites/${inviterWallet}`).set(inviterData);
-                        
-                        showMessage('Invite code submitted successfully! You will become a valid user after starting the game');
-                        updateInviteUI();
-                    });
+                    // Process invite success
+                    processInviteSuccess(inviterWallet, inviteCode, walletAddress);
                 } else {
-                    showMessage('Invalid invite code');
+                    // If not found in current players, try to find in existing invite data
+                    console.log('Inviter not found in current players, searching in existing invite data...');
+                    searchInviterInExistingData(inviteCode, walletAddress);
                 }
+            }).catch((error) => {
+                console.error('Error searching for inviter:', error);
+                showMessage('Error processing invite code');
+            });
+        }
+        
+        function searchInviterInExistingData(inviteCode, walletAddress) {
+            // Search for inviter by generating invite codes from all wallets
+            console.log('Searching for inviter by generating invite codes...');
+            
+            // First, try to find in existing invite data
+            database.ref('invites').once('value', (snapshot) => {
+                const invites = snapshot.val() || {};
+                let inviterFound = false;
+                let inviterWallet = '';
+                
+                // Check existing invite data
+                Object.keys(invites).forEach(wallet => {
+                    const inviteData = invites[wallet];
+                    console.log(`Checking existing wallet ${wallet}: ${inviteData.myInviteCode}`);
+                    if (inviteData.myInviteCode && inviteData.myInviteCode.toUpperCase() === inviteCode.toUpperCase()) {
+                        inviterFound = true;
+                        inviterWallet = wallet;
+                        console.log('Found inviter in existing data:', inviterWallet);
+                    }
+                });
+                
+                // If not found in existing data, try to find by generating invite codes
+                if (!inviterFound) {
+                    console.log('Not found in existing data, searching by generating invite codes...');
+                    
+                    // Search in all rooms for any wallet that could generate this invite code
+                    const rooms = ['default', 'room1', 'room2', 'room3'];
+                    const searchPromises = rooms.map(roomName => 
+                        database.ref(`rooms/${roomName}/leaderboard`).once('value')
+                    );
+                    
+                    Promise.all(searchPromises).then((snapshots) => {
+                        snapshots.forEach((snapshot, roomIndex) => {
+                            if (inviterFound) return; // Already found
+                            
+                            const leaderboard = snapshot.val() || [];
+                            leaderboard.forEach(entry => {
+                                if (entry && entry.playerId) {
+                                    const generatedCode = generateInviteCode(entry.playerId);
+                                    console.log(`Checking leaderboard entry ${entry.playerId}: ${generatedCode}`);
+                                    if (generatedCode.toUpperCase() === inviteCode.toUpperCase()) {
+                                        inviterFound = true;
+                                        inviterWallet = entry.playerId;
+                                        console.log('Found inviter in leaderboard:', inviterWallet);
+                                    }
+                                }
+                            });
+                        });
+                        
+                        if (inviterFound) {
+                            processInviteSuccess(inviterWallet, inviteCode, walletAddress);
+                        } else {
+                            // Get available invite codes for better error message
+                            database.ref('invites').once('value', (inviteSnapshot) => {
+                                const invites = inviteSnapshot.val() || {};
+                                const availableCodes = Object.values(invites).map(data => data.myInviteCode).filter(code => code);
+                                const errorMessage = availableCodes.length > 0 
+                                    ? `Invalid invite code. Available codes: ${availableCodes.join(', ')}`
+                                    : 'Invalid invite code. No invite codes available in the system.';
+                                showMessage(errorMessage);
+                            });
+                        }
+                    }).catch((error) => {
+                        console.error('Error searching in leaderboard:', error);
+                        showMessage('Error processing invite code');
+                    });
+                }
+            }).catch((error) => {
+                console.error('Error searching in existing data:', error);
+                showMessage('Error processing invite code');
+            });
+        }
+        
+        function processInviteSuccess(inviterWallet, inviteCode, walletAddress) {
+            console.log('Processing invite success for inviter:', inviterWallet);
+            
+            // Get or create inviter's invite data
+            database.ref(`invites/${inviterWallet}`).once('value', (snapshot) => {
+                let inviterData = snapshot.val();
+                
+                if (!inviterData) {
+                    // Create new invite data for inviter
+                    inviterData = {
+                        myInviteCode: generateInviteCode(inviterWallet),
+                        invitedBy: null,
+                        invitedUsers: [],
+                        inviteBonus: 0,
+                        hasUsedInviteCode: false,
+                        isValidUser: false
+                    };
+                }
+                
+                // Check inviter's invite limit
+                if (inviterData.invitedUsers.length >= 30) {
+                    showMessage('This invite code has reached the invite limit');
+                    return;
+                }
+                
+                // Record invite relationship
+                inviteData.invitedBy = inviteCode;
+                inviteData.hasUsedInviteCode = true;
+                
+                // Save to database
+                database.ref(`invites/${walletAddress}`).set(inviteData);
+                
+                // Update inviter's data
+                inviterData.invitedUsers.push(walletAddress);
+                inviterData.inviteBonus = Math.min(inviterData.invitedUsers.length * 10, 300); // Max 300% bonus
+                database.ref(`invites/${inviterWallet}`).set(inviterData);
+                
+                showMessage('Invite code submitted successfully! You will become a valid user after starting the game');
+                updateInviteUI();
+            }).catch((error) => {
+                console.error('Error processing invite success:', error);
+                showMessage('Error processing invite code');
             });
         }
         
         function showMessage(message) {
             // 简单的消息显示，可以后续改进为更好的UI
+            console.log('Invite System Message:', message);
             alert(message);
+        }
+        
+        function showAvailableInviteCodes() {
+            database.ref('invites').once('value', (snapshot) => {
+                const invites = snapshot.val() || {};
+                const availableCodes = Object.values(invites).map(data => data.myInviteCode).filter(code => code);
+                
+                if (availableCodes.length === 0) {
+                    showMessage('No invite codes available in the system yet.');
+                } else {
+                    const message = `Available invite codes: ${availableCodes.join(', ')}`;
+                    showMessage(message);
+                }
+            }).catch((error) => {
+                console.error('Error loading available invite codes:', error);
+                showMessage('Error loading available invite codes');
+            });
+        }
+        
+        function debugInviteCode() {
+            const walletAddressInput = document.getElementById('walletAddressInput');
+            const walletAddress = walletAddressInput.value.trim();
+            
+            if (!walletAddress) {
+                alert('Please enter wallet address first');
+                return;
+            }
+            
+            console.log('=== Invite Code Debug ===');
+            console.log('Current wallet:', walletAddress);
+            console.log('Generated invite code:', generateInviteCode(walletAddress));
+            
+            // Check if this wallet has invite data
+            database.ref(`invites/${walletAddress}`).once('value', (snapshot) => {
+                const data = snapshot.val();
+                console.log('Current invite data:', data);
+                
+                if (data) {
+                    console.log('My invite code:', data.myInviteCode);
+                    console.log('Invited by:', data.invitedBy);
+                    console.log('Invited users:', data.invitedUsers);
+                    console.log('Bonus:', data.inviteBonus);
+                }
+            });
+            
+            // Check all existing invite codes
+            database.ref('invites').once('value', (snapshot) => {
+                const invites = snapshot.val() || {};
+                console.log('All invite codes:');
+                Object.keys(invites).forEach(wallet => {
+                    const inviteData = invites[wallet];
+                    console.log(`${wallet}: ${inviteData.myInviteCode}`);
+                });
+                
+                // Test invite code matching
+                const testCode = 'V1Er4N87';
+                console.log('Testing invite code:', testCode);
+                Object.keys(invites).forEach(wallet => {
+                    const inviteData = invites[wallet];
+                    if (inviteData.myInviteCode) {
+                        const match = inviteData.myInviteCode.toUpperCase() === testCode.toUpperCase();
+                        console.log(`${wallet}: ${inviteData.myInviteCode} - Match: ${match}`);
+                    }
+                });
+                
+                // Show available invite codes to user
+                const availableCodes = Object.values(invites).map(data => data.myInviteCode).filter(code => code);
+                console.log('Available invite codes:', availableCodes);
+                alert(`Available invite codes: ${availableCodes.join(', ')}`);
+            });
         }
         
         function loadInviteDataForGame() {
@@ -3351,40 +3644,54 @@
         function updateInviterBonus(inviteCode, userWallet) {
             if (!inviteCode) return;
             
-            // Find inviter wallet address
-            database.ref('players').orderByChild('wallet').once('value', (snapshot) => {
-                snapshot.forEach((childSnapshot) => {
-                    const playerData = childSnapshot.val();
-                    if (playerData.wallet && generateInviteCode(playerData.wallet) === inviteCode) {
-                        const inviterWallet = playerData.wallet;
+            // Find inviter wallet address - search in all rooms
+            const rooms = ['default', 'room1', 'room2', 'room3'];
+            let inviterWallet = '';
+            
+            const searchPromises = rooms.map(roomName => 
+                database.ref(`rooms/${roomName}/players`).once('value')
+            );
+            
+            Promise.all(searchPromises).then((snapshots) => {
+                snapshots.forEach((snapshot) => {
+                    if (inviterWallet) return; // Already found
+                    
+                    const players = snapshot.val() || {};
+                    Object.keys(players).forEach(playerId => {
+                        const playerData = players[playerId];
+                        if (playerData.wallet && generateInviteCode(playerData.wallet) === inviteCode) {
+                            inviterWallet = playerData.wallet;
+                        }
+                    });
+                });
+                
+                if (inviterWallet) {
+                    // Update inviter's bonus
+                    database.ref(`invites/${inviterWallet}`).once('value', (inviterSnapshot) => {
+                        const inviterData = inviterSnapshot.val() || { invitedUsers: [] };
                         
-                        // Update inviter's bonus
-                        database.ref(`invites/${inviterWallet}`).once('value', (inviterSnapshot) => {
-                            const inviterData = inviterSnapshot.val() || { invitedUsers: [] };
-                            
-                            // Calculate valid user count
-                            let validUserCount = 0;
-                            const promises = inviterData.invitedUsers.map(userWallet => {
-                                return database.ref(`invites/${userWallet}`).once('value');
-                            });
-                            
-                            Promise.all(promises).then(snapshots => {
-                                snapshots.forEach(userSnapshot => {
-                                    const userData = userSnapshot.val();
-                                    if (userData && userData.isValidUser) {
-                                        validUserCount++;
-                                    }
-                                });
-                                
-                                // Update inviter's bonus (10% per valid user, max 300%)
-                                inviterData.inviteBonus = Math.min(validUserCount * 10, 300);
-                                database.ref(`invites/${inviterWallet}`).set(inviterData);
-                            });
+                        // Calculate valid user count
+                        let validUserCount = 0;
+                        const promises = inviterData.invitedUsers.map(userWallet => {
+                            return database.ref(`invites/${userWallet}`).once('value');
                         });
                         
-                        return true; // break
-                    }
-                });
+                        Promise.all(promises).then(snapshots => {
+                            snapshots.forEach(userSnapshot => {
+                                const userData = userSnapshot.val();
+                                if (userData && userData.isValidUser) {
+                                    validUserCount++;
+                                }
+                            });
+                            
+                            // Update inviter's bonus (10% per valid user, max 300%)
+                            inviterData.inviteBonus = Math.min(validUserCount * 10, 300);
+                            database.ref(`invites/${inviterWallet}`).set(inviterData);
+                        });
+                    });
+                }
+            }).catch((error) => {
+                console.error('Error updating inviter bonus:', error);
             });
         }
         
@@ -3403,41 +3710,8 @@
             
             // If there's an inviter, update inviter's bonus
             if (inviteData.invitedBy) {
-                // Find inviter wallet address
-                database.ref('players').orderByChild('wallet').once('value', (snapshot) => {
-                    snapshot.forEach((childSnapshot) => {
-                        const playerData = childSnapshot.val();
-                        if (playerData.wallet && generateInviteCode(playerData.wallet) === inviteData.invitedBy) {
-                            const inviterWallet = playerData.wallet;
-                            
-                            // Update inviter's bonus
-                            database.ref(`invites/${inviterWallet}`).once('value', (inviterSnapshot) => {
-                                const inviterData = inviterSnapshot.val() || { invitedUsers: [] };
-                                
-                                // Calculate valid user count
-                                let validUserCount = 0;
-                                const promises = inviterData.invitedUsers.map(userWallet => {
-                                    return database.ref(`invites/${userWallet}`).once('value');
-                                });
-                                
-                                Promise.all(promises).then(snapshots => {
-                                    snapshots.forEach(userSnapshot => {
-                                        const userData = userSnapshot.val();
-                                        if (userData && userData.isValidUser) {
-                                            validUserCount++;
-                                        }
-                                    });
-                                    
-                                    // Update inviter's bonus (10% per valid user, max 300%)
-                                    inviterData.inviteBonus = Math.min(validUserCount * 10, 300);
-                                    database.ref(`invites/${inviterWallet}`).set(inviteData);
-                                });
-                            });
-                            
-                            return true; // break
-                        }
-                    });
-                });
+                // Use the fixed updateInviterBonus function
+                updateInviterBonus(inviteData.invitedBy, walletAddress);
             }
         }
         
@@ -3468,6 +3742,9 @@
         document.getElementById('closeInviteModal').addEventListener('click', closeInviteModal);
         document.getElementById('copyInviteBtn').addEventListener('click', copyInviteCode);
         document.getElementById('submitInviteBtn').addEventListener('click', submitInviteCode);
+        document.getElementById('showAvailableCodesBtn').addEventListener('click', showAvailableInviteCodes);
+        document.getElementById('debugInviteBtn').addEventListener('click', debugInviteCode);
+        document.getElementById('refreshInviteListBtn').addEventListener('click', updateInvitedUsersList);
         document.getElementById('leaderboardRoomSelect').addEventListener('change', loadGlobalLeaderboard);
         
         // 颜色选择
